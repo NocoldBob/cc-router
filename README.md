@@ -33,7 +33,7 @@ CC Router 从 Windows Credential Manager 读取所选 API Key，把 Provider、�
 - **修改范围透明**：推荐模式不修改 Windows 用户环境变量和 Claude 配置文件；
   可选持久模式必须确认、写入前备份，并支持回滚。
 - **Provider 可编辑**：内置 DeepSeek、Kimi Global 和 Kimi Code 模板，也可以添加
-  自定义 Anthropic 兼容 HTTPS Provider。
+  自定义 Anthropic 兼容 HTTPS 或可信内网 HTTP Provider。
 - **安全导入导出**：Provider JSON、路由状态和备用配置不包含 API Key。
 - **VS Code Companion**：可为每个本地 Windows 工作区选择独立 Provider，并通过
   官方 Claude Code 扩展支持的进程 wrapper 启动新会话。
@@ -95,8 +95,10 @@ Windows runner 上自动完成静默安装、应用启动和卸载检查。
 1. 打开 CC Router，选择内置 Provider 或创建自定义 Provider。
 2. 检查 Base URL、主模型、快速模型和可选 Agent 参数。
 3. 将 API Key 保存到 Windows Credential Manager。
-4. 选择工作目录，点击“切换并启动 Claude Code”。
-5. 在新会话中运行 `/status`，确认实际 Base URL 和模型。
+4. 点击“保存配置”，生成 VS Code Companion 可读取的无密钥 Provider 配置；这一步不要求
+   已设置 Windows 默认路由，也不会写入用户环境变量。
+5. 选择工作目录，点击“切换并启动 Claude Code”。
+6. 在新会话中运行 `/status`，确认实际 Base URL 和模型。
 
 未填写 Claude CLI 路径时，应用会检查 `PATH`、
 `%USERPROFILE%\.local\bin\claude.exe`、`%APPDATA%\npm\claude.cmd` 和 WinGet Links。

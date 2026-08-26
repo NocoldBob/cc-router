@@ -64,7 +64,10 @@ impl ProviderRoute {
             return Err("Provider display name is required.".into());
         }
         if !is_supported_url(&self.base_url) {
-            return Err("Base URL must use HTTPS, except localhost development routes.".into());
+            return Err(
+                "Base URL must use HTTP or HTTPS. Use HTTP only for trusted intranet routes."
+                    .into(),
+            );
         }
         if !is_env_name(&self.auth_env_name) {
             return Err("API key environment variable name is invalid.".into());
@@ -250,9 +253,7 @@ fn is_env_name(value: &str) -> bool {
 
 fn is_supported_url(value: &str) -> bool {
     let normalized = value.trim().to_ascii_lowercase();
-    normalized.starts_with("https://")
-        || normalized.starts_with("http://localhost")
-        || normalized.starts_with("http://127.0.0.1")
+    normalized.starts_with("https://") || normalized.starts_with("http://")
 }
 
 #[cfg(test)]
@@ -292,9 +293,12 @@ mod tests {
     }
 
     #[test]
-    fn rejects_insecure_remote_urls_and_invalid_ids() {
+    fn accepts_http_routes_and_rejects_invalid_routes() {
         let mut candidate = route();
-        candidate.base_url = "http://remote.example.com".into();
+        candidate.base_url = "http://192.168.10.24:8000/anthropic".into();
+        assert!(candidate.validate().is_ok());
+
+        candidate.base_url = "ftp://remote.example.com".into();
         assert!(candidate.validate().is_err());
 
         candidate.base_url = "https://remote.example.com".into();

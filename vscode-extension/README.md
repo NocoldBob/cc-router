@@ -23,7 +23,8 @@
 
 1. 从 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion)
    安装扩展。首次启用时点击 **立即安装**，扩展会安装内置的匹配版本桌面端。
-2. 在自动打开的桌面端配置 Provider 与 API Key，然后点击一次“保存配置”。
+2. 在自动打开的桌面端配置 Provider 与 API Key，然后点击一次“保存配置”；不需要先设置
+   Windows 默认路由。
 3. 在 VS Code 左侧活动栏打开 **CC Router**。
 4. 点击一个 Provider，为当前工作区启用该路由。
 5. 点击 **启动 Claude Code 新会话**。
@@ -82,7 +83,8 @@ Code extension.
 
 1. Install the extension from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion).
    On first activation, click **Install Now** to install the bundled, matching desktop manager.
-2. Configure Providers and API Keys in the desktop app that opens, then save once.
+2. Configure Providers and API Keys in the desktop app that opens, then save once. Setting a
+   Windows default route first is not required.
 3. Open **CC Router** from the VS Code Activity Bar.
 4. Click a Provider to bind it to the current workspace.
 5. Click **Start New Claude Code Session**.

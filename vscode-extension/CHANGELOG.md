@@ -2,6 +2,7 @@
 
 ## 0.3.1
 
+- Bundled CC Router desktop `0.2.0-beta.2` with trusted intranet `http://` custom Provider support.
 - Made manual refresh report whether the shared Provider catalog was loaded or why it failed.
 - Added a confirmation-gated repair action that replaces an outdated desktop installation with
   the matching version bundled in the VSIX.

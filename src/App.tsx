@@ -50,6 +50,7 @@ import {
   type LaunchReadiness,
   type UserRouteStatus,
 } from './nativeRouter'
+import { providerIsValid } from './providerValidation'
 import { generateOutput, generateStatusCommands } from './routerCommands'
 import type { OutputMode, Provider, ProviderAccent } from './types'
 
@@ -104,32 +105,6 @@ function loadProviders(): Provider[] {
     return sanitized
   } catch {
     return cloneDefaults()
-  }
-}
-
-function providerIsValid(provider: Provider, providers: Provider[]) {
-  try {
-    const url = new URL(provider.baseUrl)
-    const isSecure = url.protocol === 'https:'
-    const isLocal =
-      url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname)
-    const effortValid =
-      !provider.effortLevel ||
-      ['low', 'medium', 'high', 'xhigh', 'max'].includes(provider.effortLevel)
-    const contextValueValid = (value: string) => !value || /^[1-9][0-9]*$/.test(value)
-    return Boolean(
-      provider.displayName.trim() &&
-        provider.id.match(/^[A-Za-z0-9_-]+$/) &&
-        provider.authEnvName.match(/^[A-Z_][A-Z0-9_]*$/) &&
-        provider.mainModel.trim() &&
-        providers.filter((item) => item.id === provider.id).length === 1 &&
-        effortValid &&
-        contextValueValid(provider.autoCompactWindow) &&
-        contextValueValid(provider.maxContextTokens) &&
-        (isSecure || isLocal),
-    )
-  } catch {
-    return false
   }
 }
 
