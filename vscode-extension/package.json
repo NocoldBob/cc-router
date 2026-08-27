@@ -88,6 +88,11 @@
         "icon": "$(clear-all)"
       },
       {
+        "command": "ccRouter.probeProvider",
+        "title": "%command.probeProvider%",
+        "icon": "$(pulse)"
+      },
+      {
         "command": "ccRouter.configureIntegration",
         "title": "%command.configureIntegration%"
       },
@@ -121,6 +126,13 @@
           "command": "ccRouter.openDesktop",
           "when": "view == ccRouter.overview",
           "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "ccRouter.probeProvider",
+          "when": "view == ccRouter.overview && viewItem =~ /^ccRouter\\.provider/",
+          "group": "inline@1"
         }
       ],
       "commandPalette": [

@@ -36,7 +36,9 @@ CC Router 从 Windows Credential Manager 读取所选 API Key，把 Provider、�
   自定义 Anthropic 兼容 HTTPS 或可信内网 HTTP Provider。
 - **安全导入导出**：Provider JSON、路由状态和备用配置不包含 API Key。
 - **VS Code Companion**：可为每个本地 Windows 工作区选择独立 Provider，并通过
-  官方 Claude Code 扩展支持的进程 wrapper 启动新会话。
+  官方 Claude Code 扩展支持的进程 wrapper 启动新会话。侧边栏还可以手动探测当前
+  Provider 的连接状态与延迟（单次最小请求，不包含任何项目内容），帮助在启动
+  会话前确认接口是否可用或拥堵。
 
 ## 适用场景
 

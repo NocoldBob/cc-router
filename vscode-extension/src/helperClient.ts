@@ -15,6 +15,24 @@ export interface ProviderSummary {
   selected: boolean
 }
 
+export type ProbeKind =
+  | 'ok'
+  | 'unreachable'
+  | 'timeout'
+  | 'authFailed'
+  | 'modelUnavailable'
+  | 'overloaded'
+  | 'serverError'
+  | 'unexpected'
+
+/** Sanitized probe outcome from the helper; never contains the API key or response bodies. */
+export interface ProbeResult {
+  kind: ProbeKind
+  latencyMs?: number
+  httpStatus?: number
+  testedModel: string
+}
+
 export function resolveHelperPath(context: vscode.ExtensionContext): string {
   const configured = vscode.workspace
     .getConfiguration('ccRouter')
@@ -50,7 +68,19 @@ export async function clearProvider(
   await runHelper(context, ['clear', workspace])
 }
 
-async function runHelper(context: vscode.ExtensionContext, args: string[]): Promise<string> {
+export async function probeProvider(
+  context: vscode.ExtensionContext,
+  providerId: string,
+): Promise<ProbeResult> {
+  const output = await runHelper(context, ['probe', providerId], 25_000)
+  return JSON.parse(output) as ProbeResult
+}
+
+async function runHelper(
+  context: vscode.ExtensionContext,
+  args: string[],
+  timeout = 10_000,
+): Promise<string> {
   const helper = resolveHelperPath(context)
   if (!existsSync(helper)) {
     throw new Error(`CC Router helper was not found: ${helper}`)
@@ -59,7 +89,7 @@ async function runHelper(context: vscode.ExtensionContext, args: string[]): Prom
     const { stdout } = await execFileAsync(helper, args, {
       windowsHide: true,
       encoding: 'utf8',
-      timeout: 10_000,
+      timeout,
     })
     return stdout.trim()
   } catch (error) {

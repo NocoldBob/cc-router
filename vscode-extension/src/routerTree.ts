@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { listProviders, type ProviderSummary } from './helperClient'
+import { listProviders, type ProbeResult, type ProviderSummary } from './helperClient'
 import { text } from './localization'
 
 type SectionId = 'workspace' | 'providers' | 'actions'
@@ -18,6 +18,7 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
   private workspace: string | undefined
   private ready = false
   private refreshGeneration = 0
+  private readonly probeResults = new Map<string, { result: ProbeResult; at: Date }>()
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -57,6 +58,11 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
     this.changed.fire()
   }
 
+  recordProbe(providerId: string, result: ProbeResult): void {
+    this.probeResults.set(providerId, { result, at: new Date() })
+    this.changed.fire()
+  }
+
   getTreeItem(node: RouterNode): vscode.TreeItem {
     if (node.type === 'section') {
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Expanded)
@@ -67,8 +73,11 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
 
     if (node.type === 'provider') {
       const { provider } = node
+      const probe = this.probeResults.get(provider.id)
       const item = new vscode.TreeItem(provider.displayName, vscode.TreeItemCollapsibleState.None)
-      item.description = provider.mainModel
+      item.description = probe
+        ? `${provider.mainModel} · ${probeLabel(probe.result)}`
+        : provider.mainModel
       item.iconPath = new vscode.ThemeIcon(
         provider.selected ? 'check' : provider.credentialConfigured ? 'server-environment' : 'warning',
         provider.credentialConfigured ? undefined : new vscode.ThemeColor('list.warningForeground'),
@@ -78,7 +87,7 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
           provider.credentialConfigured
             ? text('凭据已配置', 'Credential configured')
             : text('需要在桌面端配置 API Key', 'API Key required in CC Router desktop')
-        }`,
+        }${probe ? `\n\n${text('上次探测', 'Last probe')}: ${probeTooltip(probe.result, probe.at)}` : ''}`,
       )
       item.command = {
         command: 'ccRouter.selectSpecificProvider',
@@ -175,6 +184,11 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
     if (selected) {
       actions.splice(1, 0, {
         type: 'action',
+        label: text('测试当前路由连接', 'Test Current Route'),
+        icon: 'pulse',
+        command: 'ccRouter.probeProvider',
+      }, {
+        type: 'action',
         label: text('清除当前工作区路由', 'Clear Workspace Route'),
         icon: 'clear-all',
         command: 'ccRouter.clearProvider',
@@ -197,4 +211,31 @@ function endpointHost(value: string): string {
   } catch {
     return value
   }
+}
+
+export function probeLabel(result: ProbeResult): string {
+  const latency = result.latencyMs !== undefined ? ` ${result.latencyMs}ms` : ''
+  switch (result.kind) {
+    case 'ok':
+      return text(`正常${latency}`, `OK${latency}`)
+    case 'overloaded':
+      return text('服务饱和', 'Overloaded')
+    case 'timeout':
+      return text('响应超时', 'Timed out')
+    case 'unreachable':
+      return text('无法连接', 'Unreachable')
+    case 'authFailed':
+      return text('鉴权失败', 'Auth failed')
+    case 'modelUnavailable':
+      return text('模型不可用', 'Model unavailable')
+    case 'serverError':
+      return text('服务端错误', 'Server error')
+    default:
+      return text('响应异常', 'Unexpected response')
+  }
+}
+
+function probeTooltip(result: ProbeResult, at: Date): string {
+  const status = result.httpStatus !== undefined ? ` (HTTP ${result.httpStatus})` : ''
+  return `${probeLabel(result)}${status} · ${at.toLocaleTimeString()}`
 }

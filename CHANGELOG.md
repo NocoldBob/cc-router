@@ -8,6 +8,14 @@ the public beta.
 
 ## [Unreleased]
 
+### Added
+
+- VS Code Companion can now probe a Provider connection from the sidebar. The bundled
+  helper sends a single minimal, content-free Anthropic Messages request and reports a
+  sanitized classification (reachable, unreachable, timed out, auth failed, model
+  unavailable, overloaded, server error) with latency. Response bodies and API keys
+  never leave the helper process.
+
 ## [0.2.0-beta.2] - 2026-08-26
 
 ### Fixed

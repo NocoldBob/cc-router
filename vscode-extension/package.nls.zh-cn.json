@@ -8,6 +8,7 @@
   "command.selectProvider": "CC Router：为工作区选择 Provider",
   "command.startSession": "CC Router：启动 Claude Code 新会话",
   "command.clearProvider": "CC Router：清除工作区 Provider",
+  "command.probeProvider": "CC Router：测试 Provider 连接",
   "command.configureIntegration": "CC Router：配置 Claude Code 集成",
   "command.restoreWrapper": "CC Router：恢复原 Claude Wrapper",
   "command.refresh": "CC Router：刷新 Provider 状态",

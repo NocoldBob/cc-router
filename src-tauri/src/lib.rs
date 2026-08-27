@@ -2,6 +2,7 @@ mod backup;
 mod commands;
 pub mod credentials;
 pub mod models;
+pub mod probe;
 pub mod provider_store;
 mod system_env;
 

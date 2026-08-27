@@ -4,6 +4,7 @@ use std::process::{self, Command, Stdio};
 
 use cc_router_lib::credentials;
 use cc_router_lib::models::ROUTE_VARIABLES;
+use cc_router_lib::probe;
 use cc_router_lib::provider_store;
 use serde::Serialize;
 
@@ -50,6 +51,10 @@ fn run() -> Result<(), String> {
             let workspace = required_argument(&mut arguments, "workspace path")?;
             provider_store::clear_provider_for_workspace(Path::new(&workspace))
         }
+        "probe" => {
+            let provider_id = required_argument(&mut arguments, "Provider ID")?;
+            probe_provider(&provider_id)
+        }
         _ => launch_wrapped(PathBuf::from(first), arguments.collect()),
     }
 }
@@ -75,6 +80,22 @@ fn list_providers(workspace: PathBuf) -> Result<(), String> {
         .collect::<Result<Vec<_>, _>>()?;
     let json = serde_json::to_string(&summaries)
         .map_err(|error| format!("Could not serialize Provider list: {error}"))?;
+    println!("{json}");
+    Ok(())
+}
+
+fn probe_provider(provider_id: &str) -> Result<(), String> {
+    let provider = provider_store::load_provider_catalog()?
+        .into_iter()
+        .find(|provider| provider.route.id == provider_id)
+        .ok_or_else(|| "The selected Provider does not exist.".to_string())?;
+    if !provider.enabled {
+        return Err("The selected Provider is disabled.".into());
+    }
+    let token = credentials::read_provider_token(&provider.route.id)?;
+    let result = probe::probe_provider(&provider.route, &token);
+    let json = serde_json::to_string(&result)
+        .map_err(|error| format!("Could not serialize probe result: {error}"))?;
     println!("{json}");
     Ok(())
 }

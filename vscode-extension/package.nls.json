@@ -8,6 +8,7 @@
   "command.selectProvider": "CC Router: Select Provider for Workspace",
   "command.startSession": "CC Router: Start Claude Code Session",
   "command.clearProvider": "CC Router: Clear Provider for Workspace",
+  "command.probeProvider": "CC Router: Test Provider Connection",
   "command.configureIntegration": "CC Router: Configure Claude Code Integration",
   "command.restoreWrapper": "CC Router: Restore Previous Claude Wrapper",
   "command.refresh": "CC Router: Refresh Provider Status",

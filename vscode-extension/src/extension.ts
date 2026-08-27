@@ -11,12 +11,13 @@ import {
   clearProvider,
   helperExists,
   listProviders,
+  probeProvider,
   resolveHelperPath,
   selectProvider,
   type ProviderSummary,
 } from './helperClient'
 import { text } from './localization'
-import { RouterTreeProvider } from './routerTree'
+import { probeLabel, RouterTreeProvider } from './routerTree'
 
 const PREVIOUS_WRAPPER_KEY = 'ccRouter.previousClaudeProcessWrapper'
 const ONBOARDING_VERSION_KEY = 'ccRouter.onboardingVersion'
@@ -54,6 +55,8 @@ export function activate(context: vscode.ExtensionContext): void {
       startClaudeSession(context, refresh)),
     vscode.commands.registerCommand('ccRouter.clearProvider', () =>
       clearWorkspaceProvider(context, refresh)),
+    vscode.commands.registerCommand('ccRouter.probeProvider', (node?: unknown) =>
+      probeConnection(context, treeProvider, node)),
     vscode.commands.registerCommand('ccRouter.configureIntegration', () =>
       configureIntegration(context)),
     vscode.commands.registerCommand('ccRouter.restorePreviousWrapper', () =>
@@ -288,11 +291,91 @@ async function restorePreviousWrapper(context: vscode.ExtensionContext): Promise
   )
 }
 
+async function probeConnection(
+  context: vscode.ExtensionContext,
+  tree: RouterTreeProvider,
+  node: unknown,
+): Promise<void> {
+  if (!environmentSupported() || !helperReady(context)) return
+  const workspace = currentWorkspace()
+  if (!workspace) {
+    void vscode.window.showWarningMessage(
+      text('请先打开一个本地文件夹或工作区。', 'Open a local folder or workspace first.'),
+    )
+    return
+  }
+
+  try {
+    const providerId = extractProviderId(node)
+    const providers = await listProviders(context, workspace)
+    const provider = providerId
+      ? providers.find((candidate) => candidate.id === providerId)
+      : providers.find((candidate) => candidate.selected)
+    if (!provider || !provider.enabled) {
+      void vscode.window.showInformationMessage(
+        text('请先为当前工作区选择 Provider。', 'Select a Provider for this workspace first.'),
+      )
+      return
+    }
+    if (!provider.credentialConfigured) {
+      const action = await vscode.window.showWarningMessage(
+        text(
+          `${provider.displayName} 尚未在 Windows Credential Manager 中配置 API Key。`,
+          `${provider.displayName} has no API Key in Windows Credential Manager.`,
+        ),
+        text('打开 CC Router', 'Open CC Router'),
+      )
+      if (action) await openDesktop(context)
+      return
+    }
+
+    const result = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: text(
+          `正在探测 ${provider.displayName} 的连接...`,
+          `Probing ${provider.displayName}...`,
+        ),
+        cancellable: false,
+      },
+      () => probeProvider(context, provider.id),
+    )
+    tree.recordProbe(provider.id, result)
+
+    const label = probeLabel(result)
+    const status = result.httpStatus !== undefined ? ` (HTTP ${result.httpStatus})` : ''
+    if (result.kind === 'ok') {
+      void vscode.window.showInformationMessage(
+        text(
+          `${provider.displayName} 连接正常：${label}。`,
+          `${provider.displayName} is reachable: ${label}.`,
+        ),
+      )
+    } else {
+      void vscode.window.showWarningMessage(
+        text(
+          `${provider.displayName} 探测结果：${label}${status}。`,
+          `${provider.displayName} probe result: ${label}${status}.`,
+        ),
+      )
+    }
+  } catch (error) {
+    await showHelperError(context, error)
+  }
+}
+
+function extractProviderId(node: unknown): string | undefined {
+  if (typeof node === 'string') return node
+  if (node && typeof node === 'object' && (node as { type?: unknown }).type === 'provider') {
+    return (node as { provider: ProviderSummary }).provider.id
+  }
+  return undefined
+}
+
 async function clearWorkspaceProvider(
   context: vscode.ExtensionContext,
   refresh: () => Promise<void>,
-): Promise<void> {
-  if (!environmentSupported() || !helperReady(context)) return
+): Promise<void> {  if (!environmentSupported() || !helperReady(context)) return
   const workspace = currentWorkspace()
   if (!workspace) return
   try {
