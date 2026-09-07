@@ -170,7 +170,7 @@
     "package:vsix": "pnpm prepare:package && vsce package --no-dependencies"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.4.0",
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.6.2",
     "oxlint": "^1.75.0",
