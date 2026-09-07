@@ -493,6 +493,41 @@
 .form-grid.two-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .field.full { grid-column: 1 / -1; }
 
+.model-preset {
+  grid-column: 1 / -1;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1.2fr);
+  gap: 16px;
+  align-items: end;
+  background: #f2f7f3;
+  border: 1px solid #d9e8dc;
+  border-radius: 6px;
+}
+
+.model-preset-copy {
+  min-width: 0;
+  padding-bottom: 2px;
+}
+
+.model-preset-copy strong,
+.model-preset-copy small {
+  display: block;
+  line-height: 1.45;
+}
+
+.model-preset-copy strong {
+  color: #315944;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.model-preset-copy small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
 .field {
   min-width: 0;
   display: grid;
@@ -1269,6 +1304,12 @@
   .secret-row,
   .credential-row,
   .launch-config { grid-template-columns: 1fr; }
+  .model-preset {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
   .credential-delete { width: 100%; }
   .system-actions { grid-template-columns: 1fr; }
   .readiness-list { grid-template-columns: 1fr; }

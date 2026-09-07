@@ -1,6 +1,6 @@
 [package]
 name = "cc-router"
-version = "0.2.0-beta.2"
+version = "0.2.0-beta.3"
 description = "Local Claude Code route manager for Windows"
 authors = ["CC Router contributors"]
 license = "MIT"

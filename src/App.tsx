@@ -29,9 +29,13 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import {
+  applyKimiCodePreset,
   defaultProviders,
+  findKimiCodePreset,
+  kimiCodePresets,
   providerMatchesDefaultTemplate,
   providerTemplateMetadata,
+  type KimiCodePresetId,
 } from './defaultProviders'
 import {
   applyUserRoute,
@@ -159,6 +163,9 @@ function App() {
   const isDirty = JSON.stringify(providers) !== savedSnapshot
   const isValid = selected ? providerIsValid(selected, providers) : false
   const templateMetadata = selected ? providerTemplateMetadata[selected.id] : undefined
+  const kimiCodePreset = selected?.id === 'kimi-code'
+    ? findKimiCodePreset(selected)
+    : undefined
   const matchesVerifiedTemplate = selected
     ? providerMatchesDefaultTemplate(selected)
     : false
@@ -230,6 +237,15 @@ function App() {
     setProviders((current) =>
       current.map((provider) =>
         provider.id === selected.id ? { ...provider, [key]: value } : provider,
+      ),
+    )
+  }
+
+  const selectKimiCodePreset = (presetId: KimiCodePresetId) => {
+    if (!selected || selected.id !== 'kimi-code') return
+    setProviders((current) =>
+      current.map((provider) =>
+        provider.id === selected.id ? applyKimiCodePreset(provider, presetId) : provider,
       ),
     )
   }
@@ -567,6 +583,33 @@ function App() {
             <div className="section-rule" />
             <div className="section-heading compact"><div><h2>模型映射</h2><p>缺省角色会回退到主模型或快速模型</p></div></div>
             <div className="form-grid two-column">
+              {selected.id === 'kimi-code' && (
+                <div className="model-preset full">
+                  <label className="field">
+                    <span>模型方案</span>
+                    <span className="select-wrap plain-select">
+                      <select
+                        value={kimiCodePreset?.id ?? 'custom'}
+                        onChange={(event) => {
+                          if (event.target.value !== 'custom') {
+                            selectKimiCodePreset(event.target.value as KimiCodePresetId)
+                          }
+                        }}
+                      >
+                        {kimiCodePresets.map((preset) => (
+                          <option key={preset.id} value={preset.id}>{preset.label}</option>
+                        ))}
+                        {!kimiCodePreset && <option value="custom">自定义映射</option>}
+                      </select>
+                      <ChevronDown size={15} />
+                    </span>
+                  </label>
+                  <div className="model-preset-copy">
+                    <strong>{kimiCodePreset?.description ?? '当前字段不是内置方案，可继续手动编辑。'}</strong>
+                    <small>保存后仅对新会话生效；切换模型会使上下文缓存失效，建议新建会话。</small>
+                  </div>
+                </div>
+              )}
               <label className="field"><span>主模型</span><input value={selected.mainModel} onChange={(event) => updateSelected('mainModel', event.target.value)} /></label>
               <label className="field"><span>快速模型</span><input value={selected.fastModel} onChange={(event) => updateSelected('fastModel', event.target.value)} /></label>
               <label className="field"><span>Opus</span><input placeholder="回退到主模型" value={selected.opusModel} onChange={(event) => updateSelected('opusModel', event.target.value)} /></label>

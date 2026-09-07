@@ -21,7 +21,7 @@ CC Router 是一个面向 Windows 的 Claude Code 路由启动器：不运行本
 ### 已实现
 
 - Windows Tauri 2 桌面应用。
-- 管理 DeepSeek、Kimi Global、Kimi Code K3 和自定义 Anthropic 兼容 Provider。
+- 管理 DeepSeek、Kimi Global、Kimi Code K3/K2.7 Code 和自定义 Anthropic 兼容 Provider。
 - API Key 保存到 Windows Credential Manager，前端只获取“是否已配置”。
 - 向新启动的 Claude Code 子进程注入路由，不修改全局环境。
 - 可选地写入 Windows 用户环境，供新终端和重启后的 VS Code Claude Code 插件读取。
@@ -35,6 +35,8 @@ CC Router 是一个面向 Windows 的 Claude Code 路由启动器：不运行本
 - Provider 导入导出不包含 API Key。
 - 启动前检查 CLI、凭据、工作目录和路由配置，并仅按名称提示将被隔离的环境变量。
 - 内置 Provider 模板显示最后验证日期和官方文档入口。
+- Kimi Code 提供 K3 1M、K3 256K、K2.7 Code 三种原子切换方案，避免模型角色与上下文窗口
+  只修改一部分；切换仅对新会话生效。
 - 不运行代理，不转发、读取或记录 prompt、代码、模型回答和 Token 明细。
 
 ### 当前未实现

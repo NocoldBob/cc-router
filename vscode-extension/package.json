@@ -2,7 +2,7 @@
   "name": "cc-router-companion",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "NocoldBob",
   "license": "MIT",
   "repository": {

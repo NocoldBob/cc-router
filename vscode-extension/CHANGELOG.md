@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.3.2
+
+- Bundled CC Router desktop `0.2.0-beta.3` with one-click Kimi Code profiles for
+  K3 1M, K3 256K, and quota-saving K2.7 Code.
+- Added manual Provider connectivity probes with sanitized status and latency.
+
 ## 0.3.1
 
 - Bundled CC Router desktop `0.2.0-beta.2` with trusted intranet `http://` custom Provider support.

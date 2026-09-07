@@ -151,7 +151,7 @@ CLAUDE_CODE_MAX_CONTEXT_TOKENS
 | --- | --- | --- | --- | --- | --- |
 | DeepSeek | `https://api.deepseek.com/anthropic` | `deepseek-v4-pro[1m]` | `deepseek-v4-flash` | 2026-08-19 | [Claude Code 接入](https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code) |
 | Kimi Global | `https://api.moonshot.ai/anthropic` | `kimi-k3` | `kimi-k2.6` | 2026-08-19 | [模型文档](https://platform.kimi.ai/docs/models) |
-| Kimi Code | `https://api.kimi.com/coding/` | `k3[1m]` | `k3-256k` | 2026-08-19 | [Claude Code 接入](https://www.kimi.com/code/docs/third-party-tools/claude-code.html) |
+| Kimi Code | `https://api.kimi.com/coding/` | `k3[1m]` | `k3-256k` | 2026-09-07 | [Claude Code 接入](https://www.kimi.com/code/docs/third-party-tools/claude-code.html) |
 
 内置值是可编辑模板，不是对第三方服务长期可用性的承诺。Kimi Code 的
 `k3[1m]` 写法仅用于 Claude Code 环境变量场景；实际可用模型和上下文取决于
@@ -161,6 +161,18 @@ CLAUDE_CODE_MAX_CONTEXT_TOKENS
 - [Kimi Code 接入 Claude Code](https://www.kimi.com/code/docs/third-party-tools/claude-code.html)
 
 Provider 更新模型或参数后，可以直接在 UI 中修改并保存模板。
+
+Kimi Code 配置页提供三种可一次切换全部模型映射的方案：
+
+| 方案 | Claude Code 模型值 | 上下文 | 适用场景 |
+| --- | --- | --- | --- |
+| K3 1M · 复杂任务 | 主路由 `k3[1m]`，快速/Haiku `k3-256k` | 1M | 大型代码库、复杂重构和长上下文 |
+| K3 256K · 日常推荐 | 全部 `k3-256k` | 256K | 日常问答、补全和少量文件修改 |
+| K2.7 Code · 省额度 | 全部 `kimi-for-coding` | 256K | 常规开发或 K3 额度不足时继续工作 |
+
+切换后点击“保存配置”，并启动一个新的 Claude Code 会话。不同模型之间不共享上下文缓存；
+为避免重新预填充旧历史造成额外消耗，建议不要在长会话中途切换。K3 与 K2.7 Code 都应保持
+Thinking 开启，内置方案会将思考档位设为 `high`。
 
 应用会显示内置模板的最后验证日期和官方文档入口。编辑过任一技术参数后，界面会
 明确说明该验证日期只适用于默认值，不会把本地自定义值标记为官方已验证。

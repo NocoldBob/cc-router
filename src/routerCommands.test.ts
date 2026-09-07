@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultProviders } from './defaultProviders'
+import { applyKimiCodePreset, defaultProviders } from './defaultProviders'
 import {
   generateClearCommands,
   generatePersistentCommands,
@@ -37,6 +37,26 @@ describe('route command generation', () => {
     expect(parsed.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW).toBe('1048576')
     expect(parsed.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS).toBe('1048576')
     expect(parsed.env.ANTHROPIC_DEFAULT_FABLE_MODEL).toBe('k3[1m]')
+  })
+
+  it('routes every Claude model role through the K2.7 Code economy profile', () => {
+    const provider = applyKimiCodePreset(defaultProviders[2], 'k2.7-code')
+    const parsed = JSON.parse(generateSettingsSnippet(provider))
+    const modelVariables = [
+      'ANTHROPIC_MODEL',
+      'ANTHROPIC_DEFAULT_OPUS_MODEL',
+      'ANTHROPIC_DEFAULT_SONNET_MODEL',
+      'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+      'ANTHROPIC_DEFAULT_FABLE_MODEL',
+      'CLAUDE_CODE_SUBAGENT_MODEL',
+    ]
+
+    for (const variable of modelVariables) {
+      expect(parsed.env[variable]).toBe('kimi-for-coding')
+    }
+    expect(parsed.env.CLAUDE_CODE_EFFORT_LEVEL).toBe('high')
+    expect(parsed.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW).toBe('262144')
+    expect(parsed.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS).toBe('262144')
   })
 
   it('clears both session and optional persistent route variables', () => {
