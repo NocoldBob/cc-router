@@ -1,12 +1,12 @@
 <div align="center">
   <img src="assets/brand/cc-router-icon-master.png" alt="CC Router icon" width="128" height="128">
-  <h1>CC Router for Windows</h1>
+  <h1>CC Router</h1>
   <p><strong>不做代理，不改 Claude 配置，让每个 Claude Code 会话使用自己的 API 路由。</strong></p>
   <p>A no-proxy, process-isolated Claude Code Provider launcher for Windows.</p>
 
   <p>
-    <a href="https://github.com/NocoldBob/cc-router-windows/actions/workflows/ci.yml"><img src="https://github.com/NocoldBob/cc-router-windows/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <a href="https://github.com/NocoldBob/cc-router-windows/actions/workflows/security.yml"><img src="https://github.com/NocoldBob/cc-router-windows/actions/workflows/security.yml/badge.svg" alt="Security"></a>
+    <a href="https://github.com/NocoldBob/cc-router/actions/workflows/ci.yml"><img src="https://github.com/NocoldBob/cc-router/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="https://github.com/NocoldBob/cc-router/actions/workflows/security.yml"><img src="https://github.com/NocoldBob/cc-router/actions/workflows/security.yml/badge.svg" alt="Security"></a>
     <a href="https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion"><img src="https://img.shields.io/visual-studio-marketplace/v/NocoldBob.cc-router-companion?label=VS%20Code%20Marketplace&color=0078d4" alt="VS Code Marketplace"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2f6f50.svg" alt="MIT License"></a>
     <a href="#系统要求"><img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-2672ec.svg" alt="Windows 10 and 11"></a>
@@ -84,7 +84,7 @@ Claude Code 窗口后，本次路由自然失效。
 
 ### 2. 安装 CC Router
 
-beta 安装包发布在本仓库的 [Releases](https://github.com/NocoldBob/cc-router-windows/releases)
+beta 安装包发布在本仓库的 [Releases](https://github.com/NocoldBob/cc-router/releases)
 页面，同时提供 SHA-256 校验文件和 GitHub 构建来源证明。发布流程会在全新的
 Windows runner 上自动完成静默安装、应用启动和卸载检查。
 
@@ -242,8 +242,8 @@ Credential Manager 和进程环境也不能抵御已经以同一 Windows 用户�
 ### 开发与构建
 
 ```powershell
-git clone https://github.com/NocoldBob/cc-router-windows.git
-cd cc-router-windows
+git clone https://github.com/NocoldBob/cc-router.git
+cd cc-router
 pnpm install --frozen-lockfile
 
 # Web 预览，不提供 Credential Manager 和本地进程能力

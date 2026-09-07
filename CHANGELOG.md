@@ -61,8 +61,8 @@ the public beta.
 - Open-source repository policy, security, contribution, and release files.
 - Clean Windows runner smoke tests for NSIS installation, app startup, and uninstall.
 
-[Unreleased]: https://github.com/NocoldBob/cc-router-windows/compare/v0.2.0-beta.3...HEAD
-[0.2.0-beta.3]: https://github.com/NocoldBob/cc-router-windows/compare/v0.2.0-beta.2...v0.2.0-beta.3
-[0.2.0-beta.2]: https://github.com/NocoldBob/cc-router-windows/compare/v0.2.0-beta.1...v0.2.0-beta.2
-[0.2.0-beta.1]: https://github.com/NocoldBob/cc-router-windows/compare/v0.1.0-beta.1...v0.2.0-beta.1
-[0.1.0-beta.1]: https://github.com/NocoldBob/cc-router-windows/releases/tag/v0.1.0-beta.1
+[Unreleased]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.3...HEAD
+[0.2.0-beta.3]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.2...v0.2.0-beta.3
+[0.2.0-beta.2]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.1...v0.2.0-beta.2
+[0.2.0-beta.1]: https://github.com/NocoldBob/cc-router/compare/v0.1.0-beta.1...v0.2.0-beta.1
+[0.1.0-beta.1]: https://github.com/NocoldBob/cc-router/releases/tag/v0.1.0-beta.1

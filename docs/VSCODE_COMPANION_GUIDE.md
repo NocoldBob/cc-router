@@ -33,7 +33,7 @@ VS Code 会处理依赖；如果 Claude Code 没有自动安装，请在扩展�
 
 ### 从 VSIX 手动安装（备用）
 
-1. 从本项目 [GitHub Releases](https://github.com/NocoldBob/cc-router-windows/releases)
+1. 从本项目 [GitHub Releases](https://github.com/NocoldBob/cc-router/releases)
    下载最新的 `cc-router-companion-*.vsix`。
 2. 在 VS Code 扩展面板右上角点击 `...`。
 3. 选择 **从 VSIX 安装... / Install from VSIX...**。

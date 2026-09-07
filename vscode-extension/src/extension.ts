@@ -653,7 +653,7 @@ async function openDesktop(context: vscode.ExtensionContext): Promise<void> {
     )
     if (choice === openReleases) {
       await vscode.env.openExternal(
-        vscode.Uri.parse('https://github.com/NocoldBob/cc-router-windows/releases'),
+        vscode.Uri.parse('https://github.com/NocoldBob/cc-router/releases'),
       )
       return
     }

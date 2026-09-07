@@ -7,12 +7,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NocoldBob/cc-router-windows.git"
+    "url": "https://github.com/NocoldBob/cc-router.git"
   },
   "bugs": {
-    "url": "https://github.com/NocoldBob/cc-router-windows/issues"
+    "url": "https://github.com/NocoldBob/cc-router/issues"
   },
-  "homepage": "https://github.com/NocoldBob/cc-router-windows#readme",
+  "homepage": "https://github.com/NocoldBob/cc-router#readme",
   "engines": {
     "vscode": ">=1.90.0"
   },
