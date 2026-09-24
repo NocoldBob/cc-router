@@ -160,6 +160,10 @@ jobs:
           cp src-tauri/target/release/bundle/appimage/*.AppImage release-assets/
           cp vscode-extension/*-linux-x64-*.vsix release-assets/
           cd release-assets
+          for file in *\ *; do
+            [ -e "$file" ] || continue
+            mv -- "$file" "${file// /.}"
+          done
           sha256sum -- * > SHA256SUMS-linux.txt
       - name: Upload Ubuntu packages
         uses: actions/upload-artifact@v4
