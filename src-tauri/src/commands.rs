@@ -442,4 +442,12 @@ mod tests {
         assert!(!format!("{conflicts:?}").contains("must-not-leak"));
         assert!(!format!("{conflicts:?}").contains("old-model"));
     }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn ubuntu_disables_persistent_user_routing() {
+        assert_eq!(platform_name(), "linux");
+        let error = persistent_route_guard().expect_err("Ubuntu must remain process-scoped");
+        assert!(error.contains("not available on Ubuntu"));
+    }
 }

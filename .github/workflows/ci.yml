@@ -55,6 +55,7 @@ jobs:
       matrix:
         os:
           - windows-latest
+          - ubuntu-22.04
           - ubuntu-24.04
     defaults:
       run:
