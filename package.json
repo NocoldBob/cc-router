@@ -44,6 +44,13 @@
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.11"
+  },
+  "pnpm": {
+    "overrides": {
+      "fast-uri": "^3.1.6",
+      "js-yaml": "^4.3.2",
+      "qs": "^6.16.0"
+    }
   }
 }

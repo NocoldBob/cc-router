@@ -8,7 +8,7 @@ the public beta.
 
 ## [Unreleased]
 
-## [0.2.0-beta.3] - 2026-09-07
+## [0.2.0-beta.3] - 2026-09-24
 
 ### Added
 
@@ -20,6 +20,11 @@ the public beta.
   sanitized classification (reachable, unreachable, timed out, auth failed, model
   unavailable, overloaded, server error) with latency. Response bodies and API keys
   never leave the helper process.
+
+### Security
+
+- Updated Rust TLS and JavaScript development dependencies to patched versions before
+  publishing the beta release.
 
 ## [0.2.0-beta.2] - 2026-08-26
 
