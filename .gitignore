@@ -14,6 +14,10 @@ src-tauri/target/
 vscode-extension/dist/
 vscode-extension/bin/*.exe
 vscode-extension/desktop/*.exe
+vscode-extension/bin/*/cc-router-helper
+vscode-extension/bin/*/cc-router-helper.exe
+vscode-extension/desktop/*/*.AppImage
+vscode-extension/desktop/*/*.exe
 vscode-extension/*.vsix
 .tmp/
 *.local

@@ -147,6 +147,7 @@ function App() {
     platform: 'web',
     cliAvailable: false,
     credentialStore: 'Unavailable in web preview',
+    persistentRouteSupported: false,
   })
   const [routeStatus, setRouteStatus] = useState<UserRouteStatus | null>(null)
   const [launchReadiness, setLaunchReadiness] = useState<LaunchReadiness | null>(null)
@@ -170,9 +171,13 @@ function App() {
     ? providerMatchesDefaultTemplate(selected)
     : false
   const launchReady = Boolean(launchReadiness?.ready && !isDirty && isValid)
+  const isLinux = runtime.platform === 'linux'
+  const availableModes = (Object.keys(modeLabels) as OutputMode[]).filter(
+    (item) => item !== 'persistent' || runtime.persistentRouteSupported,
+  )
   const output = useMemo(
-    () => (selected ? generateOutput(selected, mode) : ''),
-    [selected, mode],
+    () => (selected ? generateOutput(selected, mode, runtime.platform) : ''),
+    [selected, mode, runtime.platform],
   )
   const canLaunch = Boolean(
     nativeRuntimeAvailable &&
@@ -198,6 +203,10 @@ function App() {
   }, [cliPath, refreshCounter])
 
   useEffect(() => {
+    if (!runtime.persistentRouteSupported && mode === 'persistent') setMode('session')
+  }, [runtime.persistentRouteSupported, mode])
+
+  useEffect(() => {
     if (!nativeRuntimeAvailable || !selected) {
       setCredentialConfigured(false)
       setRouteStatus(null)
@@ -206,14 +215,14 @@ function App() {
     setSecretDraft('')
     void Promise.all([
       getCredentialStatus(selected.id),
-      getUserRouteStatus(selected),
+      runtime.persistentRouteSupported ? getUserRouteStatus(selected) : Promise.resolve(null),
     ])
       .then(([credential, status]) => {
         setCredentialConfigured(credential.configured)
         setRouteStatus(status)
       })
       .catch((error) => flash(errorMessage(error)))
-  }, [selected, refreshCounter])
+  }, [selected, refreshCounter, runtime.persistentRouteSupported])
 
   useEffect(() => {
     if (!nativeRuntimeAvailable || !selected) {
@@ -279,7 +288,7 @@ function App() {
 
   const copyStatusCheck = async () => {
     try {
-      await navigator.clipboard.writeText(generateStatusCommands())
+      await navigator.clipboard.writeText(generateStatusCommands(runtime.platform))
       flash('环境检查命令已复制')
     } catch {
       flash('浏览器未允许剪贴板访问')
@@ -295,7 +304,7 @@ function App() {
       setSecretDraft('')
       setShowSecret(false)
       refreshNativeState()
-      flash('API Key 已保存到 Windows Credential Manager')
+      flash(`API Key 已保存到 ${runtime.credentialStore}`)
     } catch (error) {
       flash(errorMessage(error))
     } finally {
@@ -311,7 +320,7 @@ function App() {
       setCredentialConfigured(false)
       setSecretDraft('')
       refreshNativeState()
-      flash('已从 Windows Credential Manager 删除 API Key')
+      flash(`已从 ${runtime.credentialStore} 删除 API Key`)
     } catch (error) {
       flash(errorMessage(error))
     } finally {
@@ -493,7 +502,7 @@ function App() {
           {nativeRuntimeAvailable ? <LockKeyhole size={17} /> : <Laptop size={17} />}
           <span>
             <strong>{nativeRuntimeAvailable ? 'Desktop runtime' : 'Web preview'}</strong>
-            <small>{nativeRuntimeAvailable ? 'Credential Manager · 无代理' : '本地命令不可用'}</small>
+            <small>{nativeRuntimeAvailable ? `${runtime.credentialStore} · 无代理` : '本地命令不可用'}</small>
           </span>
         </div>
       </aside>
@@ -509,7 +518,7 @@ function App() {
                   {isValid ? <Check size={12} /> : <AlertTriangle size={12} />}
                   {isValid ? 'Configured' : 'Needs attention'}
                 </span>
-                {routeStatus?.matchesSelected && <span className="route-badge active-route"><Power size={11} />系统默认</span>}
+                {runtime.persistentRouteSupported && routeStatus?.matchesSelected && <span className="route-badge active-route"><Power size={11} />系统默认</span>}
               </div>
               <p>{selected.baseUrl}</p>
               {templateMetadata && (
@@ -536,7 +545,7 @@ function App() {
         {!nativeRuntimeAvailable && (
           <div className="runtime-banner">
             <Laptop size={17} />
-            <span><strong>当前是 Web 预览</strong><small>一键启动、Credential Manager 和系统环境写入仅在 Tauri 桌面版中启用。</small></span>
+            <span><strong>当前是 Web 预览</strong><small>一键启动、系统凭据库和本地路由能力仅在 Tauri 桌面版中启用。</small></span>
           </div>
         )}
 
@@ -643,7 +652,7 @@ function App() {
 
             <div className="section-rule" />
             <div className="section-heading compact">
-              <div><h2>安全凭据</h2><p>API Key 由 Windows Credential Manager 保管</p></div>
+              <div><h2>安全凭据</h2><p>API Key 由 {runtime.credentialStore} 保管</p></div>
               <span className={`credential-badge ${credentialConfigured ? 'configured' : ''}`}>
                 {credentialConfigured ? <Check size={12} /> : <KeyRound size={12} />}
                 {credentialConfigured ? '已配置' : '未配置'}
@@ -693,20 +702,26 @@ function App() {
             </div>
 
             <div className="native-status-grid">
-              <div><span>凭据</span><strong className={credentialConfigured ? 'ok' : 'warn'}>{credentialConfigured ? 'Credential Manager 已配置' : '需要 API Key'}</strong></div>
+              <div><span>凭据</span><strong className={credentialConfigured ? 'ok' : 'warn'}>{credentialConfigured ? `${runtime.credentialStore} 已配置` : '需要 API Key'}</strong></div>
               <div><span>Claude CLI</span><strong className={runtime.cliAvailable ? 'ok' : 'warn'}>{runtime.cliAvailable ? '已检测到' : '未检测到'}</strong></div>
-              <div><span>Windows 默认</span><strong className={routeStatus?.matchesSelected ? 'ok' : ''}>{routeStatus?.baseUrl ? (routeStatus.matchesSelected ? '当前 Provider' : '其他路由') : '未设置'}</strong></div>
-              <div><span>默认路由鉴权</span><strong>{routeStatus?.authTokenSet ? '已设置' : '未设置'}</strong></div>
+              {runtime.persistentRouteSupported ? (
+                <>
+                  <div><span>Windows 默认</span><strong className={routeStatus?.matchesSelected ? 'ok' : ''}>{routeStatus?.baseUrl ? (routeStatus.matchesSelected ? '当前 Provider' : '其他路由') : '未设置'}</strong></div>
+                  <div><span>默认路由鉴权</span><strong>{routeStatus?.authTokenSet ? '已设置' : '未设置'}</strong></div>
+                </>
+              ) : (
+                <div><span>路由模式</span><strong className="ok">进程隔离</strong></div>
+              )}
             </div>
 
             <div className="launch-config">
               <label className="dark-field">
                 <span><FolderOpen size={13} /> 工作目录</span>
-                <input value={workingDirectory} placeholder="例如 D:\\projects\\my-app" onChange={(event) => setWorkingDirectory(event.target.value)} />
+                <input value={workingDirectory} placeholder={isLinux ? '例如 /home/user/projects/my-app' : '例如 D:\\projects\\my-app'} onChange={(event) => setWorkingDirectory(event.target.value)} />
               </label>
               <label className="dark-field">
                 <span><Terminal size={13} /> Claude CLI 路径</span>
-                <input value={cliPath} placeholder={runtime.cliPath || '自动检测，或填写 claude.exe / claude.cmd'} onChange={(event) => setCliPath(event.target.value)} />
+                <input value={cliPath} placeholder={runtime.cliPath || (isLinux ? '自动检测，或填写 /home/user/.local/bin/claude' : '自动检测，或填写 claude.exe / claude.cmd')} onChange={(event) => setCliPath(event.target.value)} />
               </label>
             </div>
 
@@ -755,34 +770,36 @@ function App() {
             <button className="button launch native-launch" disabled={!canLaunch || Boolean(busy)} onClick={() => void startClaude()}>
               <Play size={17} /> {busy === 'launch' ? '正在启动…' : `切换并启动 ${selected.displayName}`}
             </button>
-            <div className="system-actions">
-              <button className="button outline" disabled={!nativeRuntimeAvailable || !credentialConfigured || !isValid || isDirty || Boolean(busy)} onClick={() => setConfirmAction('apply')}>
-                <Power size={15} /> 设为 Windows 默认
-              </button>
-              <button className="button outline" disabled={!nativeRuntimeAvailable || !routeStatus?.backupAvailable || Boolean(busy)} onClick={() => void rollback()}>
-                <Undo2 size={15} /> 回滚
-              </button>
-              <button className="button clear-native" disabled={!nativeRuntimeAvailable || Boolean(busy)} onClick={() => setConfirmAction('clear')}>
-                <X size={15} /> 清除
-              </button>
-            </div>
+            {runtime.persistentRouteSupported && (
+              <div className="system-actions">
+                <button className="button outline" disabled={!nativeRuntimeAvailable || !credentialConfigured || !isValid || isDirty || Boolean(busy)} onClick={() => setConfirmAction('apply')}>
+                  <Power size={15} /> 设为 Windows 默认
+                </button>
+                <button className="button outline" disabled={!nativeRuntimeAvailable || !routeStatus?.backupAvailable || Boolean(busy)} onClick={() => void rollback()}>
+                  <Undo2 size={15} /> 回滚
+                </button>
+                <button className="button clear-native" disabled={!nativeRuntimeAvailable || Boolean(busy)} onClick={() => setConfirmAction('clear')}>
+                  <X size={15} /> 清除
+                </button>
+              </div>
+            )}
 
             {!runtime.cliAvailable && nativeRuntimeAvailable && (
-              <div className="notice"><AlertTriangle size={16} /><span><strong>未找到 Claude Code CLI</strong><small>系统默认路由仍可用于重启后的 VS Code 插件；直接启动需要安装 CLI 或填写路径。</small></span></div>
+              <div className="notice"><AlertTriangle size={16} /><span><strong>未找到 Claude Code CLI</strong><small>{runtime.persistentRouteSupported ? '系统默认路由仍可用于重启后的 VS Code 插件；直接启动需要安装 CLI 或填写路径。' : '请安装 Claude Code CLI，或填写可执行文件路径。'}</small></span></div>
             )}
 
             <div className="output-separator"><span>手动备用命令</span></div>
             <div className="output-header compact-output">
-              <div><span className="eyebrow">ROUTE OUTPUT</span><h2>PowerShell</h2></div>
+              <div><span className="eyebrow">ROUTE OUTPUT</span><h2>{isLinux ? 'Bash' : 'PowerShell'}</h2></div>
               <span className="key-state">读取 {selected.authEnvName}</span>
             </div>
             <div className="mode-tabs" role="tablist" aria-label="输出类型">
-              {(Object.keys(modeLabels) as OutputMode[]).map((item) => (
+              {availableModes.map((item) => (
                 <button key={item} role="tab" aria-selected={mode === item} className={mode === item ? 'active' : ''} onClick={() => setMode(item)}>{modeLabels[item]}</button>
               ))}
             </div>
             <div className="code-wrap compact-code">
-              <div className="code-toolbar"><span>{mode === 'settings' ? 'JSON' : 'POWERSHELL'}</span><button title="复制输出" onClick={() => void copyOutput()}><Clipboard size={15} /> 复制</button></div>
+              <div className="code-toolbar"><span>{mode === 'settings' ? 'JSON' : isLinux ? 'BASH' : 'POWERSHELL'}</span><button title="复制输出" onClick={() => void copyOutput()}><Clipboard size={15} /> 复制</button></div>
               <pre><code>{output}</code></pre>
             </div>
             <div className="verification">

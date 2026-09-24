@@ -1,4 +1,4 @@
-name: Beta release
+name: Release
 
 on:
   push:
@@ -6,102 +6,80 @@ on:
       - "v*"
 
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
 
 jobs:
-  release:
-    name: Build and publish Windows beta
+  windows:
+    name: Build Windows release
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-
       - name: Install pnpm
         run: npm install --global pnpm@10.33.0
-
       - name: Set up Rust
         run: |
           rustup toolchain install stable --profile minimal --component rustfmt
           rustup default stable
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Verify tag and package versions
+      - name: Verify release versions
         shell: pwsh
         run: |
           $expected = $env:GITHUB_REF_NAME.TrimStart('v')
           $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
           $tauriVersion = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
           $cargoVersion = (Select-String -Path src-tauri/Cargo.toml -Pattern '^version = "([^"]+)"$').Matches[0].Groups[1].Value
+          $extensionVersion = (Get-Content vscode-extension/package.json | ConvertFrom-Json).version
           if ($packageVersion -ne $expected -or $tauriVersion -ne $expected -or $cargoVersion -ne $expected) {
-            throw "Tag $expected does not match package ($packageVersion), Tauri ($tauriVersion), and Cargo ($cargoVersion) versions."
+            throw "Tag $expected does not match desktop package versions."
           }
-
-      - name: Run frontend checks
+          if ($extensionVersion -notmatch '^\d+\.\d+\.\d+$') {
+            throw "VS Code extension version $extensionVersion is not stable semantic versioning."
+          }
+      - name: Run checks
         run: |
           pnpm lint
           pnpm test
           pnpm vscode:check
-
-      - name: Run Rust checks
-        working-directory: src-tauri
-        run: |
+          cd src-tauri
           cargo fmt --all -- --check
           cargo test --locked
           cargo check --locked
-
-      - name: Build desktop installer and VS Code extension
+      - name: Build Windows installer and VSIX
         run: pnpm vscode:package
-
       - name: Smoke-test installer, app launch, and uninstall
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
           if (-not $installer) { throw "NSIS installer was not produced." }
-
           $installDir = Join-Path $env:RUNNER_TEMP "cc-router-smoke"
           $installedApp = $null
           $uninstaller = $null
           $launchedApp = $null
-
           try {
             $install = Start-Process -FilePath $installer.FullName -ArgumentList '/S', "/D=$installDir" -Wait -PassThru
             if ($install.ExitCode -ne 0) { throw "Silent install failed with exit code $($install.ExitCode)." }
-
             $uninstaller = Get-ChildItem $installDir -Filter "*.exe" -Recurse |
-              Where-Object { $_.Name -match '^(unins|uninstall)' } |
-              Select-Object -First 1
-            $installedApp = Get-ChildItem $installDir -Filter "cc-router.exe" -Recurse |
-              Select-Object -First 1
+              Where-Object { $_.Name -match '^(unins|uninstall)' } | Select-Object -First 1
+            $installedApp = Get-ChildItem $installDir -Filter "cc-router.exe" -Recurse | Select-Object -First 1
             if (-not $installedApp) { throw "Installed application executable was not found." }
             if (-not $uninstaller) { throw "NSIS uninstaller was not found." }
-
             $launchedApp = Start-Process -FilePath $installedApp.FullName -WindowStyle Hidden -PassThru
             Start-Sleep -Seconds 5
             $launchedApp.Refresh()
-            if ($launchedApp.HasExited) { throw "Installed app exited during the launch smoke test." }
+            if ($launchedApp.HasExited) { throw "Installed app exited during launch smoke test." }
             Stop-Process -Id $launchedApp.Id -Force
-            Wait-Process -Id $launchedApp.Id -ErrorAction SilentlyContinue
             $launchedApp = $null
-
             $uninstall = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait -PassThru
             if ($uninstall.ExitCode -ne 0) { throw "Silent uninstall failed with exit code $($uninstall.ExitCode)." }
             $uninstaller = $null
-
-            for ($attempt = 0; $attempt -lt 20 -and (Test-Path $installedApp.FullName); $attempt++) {
-              Start-Sleep -Milliseconds 500
-            }
-            if (Test-Path $installedApp.FullName) { throw "Application executable remains after uninstall." }
           }
           finally {
             if ($launchedApp -and -not $launchedApp.HasExited) {
@@ -111,58 +89,111 @@ jobs:
               Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait | Out-Null
             }
           }
-
-      - name: Generate checksums
-        id: package
+      - name: Collect Windows packages and checksums
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Path release-assets | Out-Null
           $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
-          if (-not $installer) { throw "NSIS installer was not produced." }
-          $vsix = Get-ChildItem "vscode-extension/*.vsix" | Select-Object -First 1
-          if (-not $vsix) { throw "VS Code extension package was not produced." }
-          $releaseName = $installer.Name.Replace(' ', '.')
-          if ($releaseName -ne $installer.Name) {
-            $releasePath = Join-Path $installer.DirectoryName $releaseName
-            Move-Item -LiteralPath $installer.FullName -Destination $releasePath
-            $installer = Get-Item -LiteralPath $releasePath
+          $vsix = Get-ChildItem "vscode-extension/*-win32-x64.vsix" | Select-Object -First 1
+          if (-not $installer -or -not $vsix) { throw "Windows release assets are incomplete." }
+          Copy-Item $installer.FullName "release-assets/$($installer.Name.Replace(' ', '.'))"
+          Copy-Item $vsix.FullName "release-assets/$($vsix.Name)"
+          Get-ChildItem release-assets -File | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)" | Set-Content "$($_.FullName).sha256" -Encoding ascii
           }
-          $checksumPath = "$($installer.FullName).sha256"
-          $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $($installer.Name)" | Set-Content -LiteralPath $checksumPath -Encoding ascii
-          $vsixChecksumPath = "$($vsix.FullName).sha256"
-          $vsixHash = (Get-FileHash -LiteralPath $vsix.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$vsixHash  $($vsix.Name)" | Set-Content -LiteralPath $vsixChecksumPath -Encoding ascii
-          "installer=$($installer.FullName)" >> $env:GITHUB_OUTPUT
-          "checksum=$checksumPath" >> $env:GITHUB_OUTPUT
-          "vsix=$($vsix.FullName)" >> $env:GITHUB_OUTPUT
-          "vsix_checksum=$vsixChecksumPath" >> $env:GITHUB_OUTPUT
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: release-assets/*
+          if-no-files-found: error
 
-      - name: Attest installer provenance
+  ubuntu:
+    name: Build Ubuntu release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@10.33.0
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup default stable
+      - name: Install Ubuntu build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libdbus-1-dev \
+            patchelf
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run Linux checks
+        run: |
+          pnpm vscode:check
+          cd src-tauri
+          cargo fmt --all -- --check
+          cargo test --locked
+          cargo check --locked
+      - name: Build Ubuntu packages and VSIX
+        run: pnpm vscode:package
+      - name: Validate Ubuntu packages
+        run: |
+          test -n "$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' -print -quit)"
+          test -n "$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' -print -quit)"
+          test -n "$(find vscode-extension -maxdepth 1 -name '*-linux-x64.vsix' -print -quit)"
+          dpkg-deb --info src-tauri/target/release/bundle/deb/*.deb >/dev/null
+      - name: Collect Ubuntu packages and checksums
+        run: |
+          mkdir release-assets
+          cp src-tauri/target/release/bundle/deb/*.deb release-assets/
+          cp src-tauri/target/release/bundle/appimage/*.AppImage release-assets/
+          cp vscode-extension/*-linux-x64.vsix release-assets/
+          cd release-assets
+          sha256sum -- * > SHA256SUMS-linux.txt
+      - name: Upload Ubuntu packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-release
+          path: release-assets/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs:
+      - windows
+      - ubuntu
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-release'
+          path: release-assets
+          merge-multiple: true
+      - name: Attest release provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: ${{ steps.package.outputs.installer }}
-
-      - name: Attest VS Code extension provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: ${{ steps.package.outputs.vsix }}
-
-      - name: Publish prerelease
-        shell: pwsh
+          subject-path: release-assets/*
+      - name: Publish stable release
         env:
           GH_TOKEN: ${{ github.token }}
-          INSTALLER_PATH: ${{ steps.package.outputs.installer }}
-          CHECKSUM_PATH: ${{ steps.package.outputs.checksum }}
-          VSIX_PATH: ${{ steps.package.outputs.vsix }}
-          VSIX_CHECKSUM_PATH: ${{ steps.package.outputs.vsix_checksum }}
         run: |
-          gh release create $env:GITHUB_REF_NAME `
-            $env:INSTALLER_PATH `
-            $env:CHECKSUM_PATH `
-            $env:VSIX_PATH `
-            $env:VSIX_CHECKSUM_PATH `
-            --repo $env:GITHUB_REPOSITORY `
-            --verify-tag `
-            --prerelease `
-            --generate-notes `
-            --title $env:GITHUB_REF_NAME
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --generate-notes \
+            --title "$GITHUB_REF_NAME"

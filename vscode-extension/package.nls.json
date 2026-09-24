@@ -1,10 +1,10 @@
 {
   "extension.displayName": "CC Router Companion",
-  "extension.description": "Select a process-isolated CC Router Provider for each local Windows VS Code workspace.",
+  "extension.description": "Select a process-isolated CC Router Provider for each local Windows or Ubuntu VS Code workspace.",
   "view.container": "CC Router",
   "view.overview": "Workspace Routing",
   "view.welcome.setup": "No shared Provider configuration was found. Open CC Router desktop, configure your API Keys, save once, then refresh this view.",
-  "view.welcome.workspace": "Open a local Windows folder or workspace to select a Provider.",
+  "view.welcome.workspace": "Open a local Windows or Ubuntu folder or workspace to select a Provider.",
   "command.selectProvider": "CC Router: Select Provider for Workspace",
   "command.startSession": "CC Router: Start Claude Code Session",
   "command.clearProvider": "CC Router: Clear Provider for Workspace",
@@ -14,6 +14,6 @@
   "command.refresh": "CC Router: Refresh Provider Status",
   "command.openDesktop": "CC Router: Open Desktop App",
   "command.repairDesktop": "CC Router: Repair or Update Desktop App",
-  "configuration.helperPath": "Optional path to cc-router-helper.exe. Leave empty to use the helper bundled with the extension.",
+  "configuration.helperPath": "Optional path to the CC Router helper executable. Leave empty to use the platform helper bundled with the extension.",
   "configuration.desktopPath": "Optional path to the CC Router desktop executable."
 }

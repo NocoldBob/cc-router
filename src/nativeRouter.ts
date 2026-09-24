@@ -24,6 +24,7 @@ export interface RuntimeInfo {
   cliAvailable: boolean
   cliPath?: string
   credentialStore: string
+  persistentRouteSupported: boolean
 }
 
 export interface CredentialStatus {

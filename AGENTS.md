@@ -7,10 +7,10 @@ Before changing this repository, read:
 
 ## Product Invariants
 
-- CC Router is a Windows-only, no-proxy, process-isolated Claude Code provider launcher.
+- CC Router is a Windows and Ubuntu, no-proxy, process-isolated Claude Code provider launcher.
 - Do not add an HTTP proxy, request logging, telemetry, cloud sync, or protocol conversion without an explicit product decision.
-- Stored API keys remain in Windows Credential Manager and must never be returned to the frontend, logs, exports, Provider JSON, or `localStorage`.
-- Process-scoped launch is the recommended mode and must not mutate Windows user environment variables or Claude configuration files.
+- Stored API keys remain in the operating system credential store (Windows Credential Manager or Linux Secret Service) and must never be returned to the frontend, logs, exports, Provider JSON, or `localStorage`.
+- Process-scoped launch is the recommended mode and must not mutate user environment variables, shell profiles, or Claude configuration files.
 - Persistent Windows routing is optional, confirmation-gated, backed up before mutation, and clearly warns that `ANTHROPIC_AUTH_TOKEN` becomes a plaintext user environment variable.
 - Do not describe roadmap items as implemented features.
 - Never use a real API key or modify the maintainer's user environment during automated verification.

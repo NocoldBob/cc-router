@@ -164,6 +164,7 @@ pub struct RuntimeInfo {
     pub cli_available: bool,
     pub cli_path: Option<String>,
     pub credential_store: String,
+    pub persistent_route_supported: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]

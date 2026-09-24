@@ -2,23 +2,23 @@
   <img src="assets/brand/cc-router-icon-master.png" alt="CC Router icon" width="128" height="128">
   <h1>CC Router</h1>
   <p><strong>不做代理，不改 Claude 配置，让每个 Claude Code 会话使用自己的 API 路由。</strong></p>
-  <p>A no-proxy, process-isolated Claude Code Provider launcher for Windows.</p>
+  <p>A no-proxy, process-isolated Claude Code Provider launcher for Windows and Ubuntu.</p>
 
   <p>
     <a href="https://github.com/NocoldBob/cc-router/actions/workflows/ci.yml"><img src="https://github.com/NocoldBob/cc-router/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="https://github.com/NocoldBob/cc-router/actions/workflows/security.yml"><img src="https://github.com/NocoldBob/cc-router/actions/workflows/security.yml/badge.svg" alt="Security"></a>
     <a href="https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion"><img src="https://img.shields.io/visual-studio-marketplace/v/NocoldBob.cc-router-companion?label=VS%20Code%20Marketplace&color=0078d4" alt="VS Code Marketplace"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2f6f50.svg" alt="MIT License"></a>
-    <a href="#系统要求"><img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-2672ec.svg" alt="Windows 10 and 11"></a>
-    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/status-beta-f26b5e.svg" alt="Beta"></a>
+    <a href="#系统要求"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Ubuntu-2672ec.svg" alt="Windows and Ubuntu"></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/status-stable-2f6f50.svg" alt="Stable"></a>
   </p>
 </div>
 
 > [!IMPORTANT]
-> 当前是公开测试版：仅支持 Windows、Claude Code 和 Anthropic 兼容 Provider。
+> 当前支持 Windows 10/11 x64 与 Ubuntu 22.04/24.04 x64、Claude Code 和 Anthropic 兼容 Provider。
 > 推荐使用进程隔离模式。项目不运行 HTTP 代理，也不提供协议转换。
 
-CC Router 从 Windows Credential Manager 读取所选 API Key，把 Provider、模型和
+CC Router 从系统凭据存储读取所选 API Key，把 Provider、模型和
 上下文环境变量只注入新启动的 Claude Code 进程。它不处于模型请求路径中，
 因此不会转发、读取或记录你的 prompt、代码、模型回答和 Token 用量。
 
@@ -28,21 +28,22 @@ CC Router 从 Windows Credential Manager 读取所选 API Key，把 Provider、�
   Codex 和 VS Code 窗口不受影响。
 - **无代理直连**：Claude Code 直接请求 Provider 的 Anthropic 兼容接口，不增加
   本地端口、协议转换层或额外请求日志。
-- **Windows 原生凭据**：API Key 保存在 Credential Manager；前端只知道凭据是否
+- **系统原生凭据**：API Key 在 Windows 保存到 Credential Manager，在 Ubuntu 保存到
+  Secret Service；前端只知道凭据是否
   已配置，不会读取或显示真实 Key。
 - **修改范围透明**：推荐模式不修改 Windows 用户环境变量和 Claude 配置文件；
   可选持久模式必须确认、写入前备份，并支持回滚。
 - **Provider 可编辑**：内置 DeepSeek、Kimi Global 和 Kimi Code 模板，也可以添加
   自定义 Anthropic 兼容 HTTPS 或可信内网 HTTP Provider。
 - **安全导入导出**：Provider JSON、路由状态和备用配置不包含 API Key。
-- **VS Code Companion**：可为每个本地 Windows 工作区选择独立 Provider，并通过
+- **VS Code Companion**：可为每个本地 Windows 或 Ubuntu 工作区选择独立 Provider，并通过
   官方 Claude Code 扩展支持的进程 wrapper 启动新会话。侧边栏还可以手动探测当前
   Provider 的连接状态与延迟（单次最小请求，不包含任何项目内容），帮助在启动
   会话前确认接口是否可用或拥堵。
 
 ## 适用场景
 
-CC Router 适合主要在 Windows 上使用 Claude Code，希望不同项目同时使用不同
+CC Router 适合在 Windows 或 Ubuntu 桌面使用 Claude Code，希望不同项目同时使用不同
 Provider，并且重视 Key 存放位置和配置修改范围的用户。
 
 它不适合需要以下能力的场景：
@@ -50,7 +51,7 @@ Provider，并且重视 Key 存放位置和配置修改范围的用户。
 - OpenAI Responses、Chat Completions 与 Anthropic Messages 之间的协议转换
 - 自动故障转移、熔断、请求日志、费用或用量统计
 - Codex、Gemini CLI、OpenCode、MCP 和 Skills 的统一管理
-- macOS、Linux、云同步或企业集中策略
+- macOS、其他 Linux 发行版、云同步或企业集中策略
 
 这些能力不只是尚未完成的功能，也不属于当前产品定位。计划中的工作见
 [Roadmap](ROADMAP.md)。
@@ -60,7 +61,7 @@ Provider，并且重视 Key 存放位置和配置修改范围的用户。
 推荐模式的数据路径很短：
 
 ```text
-Windows Credential Manager
+System credential store
           |
           | Rust 后端按需读取 Key
           v
@@ -78,15 +79,15 @@ Claude Code 窗口后，本次路由自然失效。
 
 ### 1. 准备环境
 
-- Windows 10 或 Windows 11 x64
+- Windows 10/11 x64，或 Ubuntu Desktop 22.04/24.04 x64
 - 已安装并可正常运行的 [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview)
 - 一个受支持 Provider 的 API Key
 
 ### 2. 安装 CC Router
 
-beta 安装包发布在本仓库的 [Releases](https://github.com/NocoldBob/cc-router/releases)
+安装包发布在本仓库的 [Releases](https://github.com/NocoldBob/cc-router/releases)
 页面，同时提供 SHA-256 校验文件和 GitHub 构建来源证明。发布流程会在全新的
-Windows runner 上自动完成静默安装、应用启动和卸载检查。
+Windows 与 Ubuntu runner 上自动构建和验证。
 
 > [!WARNING]
 > 当前安装包没有商业代码签名，Windows 可能显示“未知发布者”或 SmartScreen
@@ -96,14 +97,13 @@ Windows runner 上自动完成静默安装、应用启动和卸载检查。
 
 1. 打开 CC Router，选择内置 Provider 或创建自定义 Provider。
 2. 检查 Base URL、主模型、快速模型和可选 Agent 参数。
-3. 将 API Key 保存到 Windows Credential Manager。
+3. 将 API Key 保存到系统凭据存储。
 4. 点击“保存配置”，生成 VS Code Companion 可读取的无密钥 Provider 配置；这一步不要求
    已设置 Windows 默认路由，也不会写入用户环境变量。
 5. 选择工作目录，点击“切换并启动 Claude Code”。
 6. 在新会话中运行 `/status`，确认实际 Base URL 和模型。
 
-未填写 Claude CLI 路径时，应用会检查 `PATH`、
-`%USERPROFILE%\.local\bin\claude.exe`、`%APPDATA%\npm\claude.cmd` 和 WinGet Links。
+未填写 Claude CLI 路径时，应用会检查 `PATH` 以及当前平台常见的用户安装路径。
 
 ## 两种路由模式
 
@@ -111,6 +111,8 @@ Windows runner 上自动完成静默安装、应用启动和卸载检查。
 | --- | --- | --- | --- |
 | 切换并启动 Claude Code | 仅新建 Claude Code 子进程 | 关闭该窗口后失效 | **推荐** |
 | 设为 Windows 默认路由 | 当前用户的 Windows 环境变量 | 清除、回滚或再次修改前持续存在 | 谨慎使用 |
+
+Ubuntu 仅提供进程隔离模式，不写入 `.bashrc`、`.profile` 或其他 shell 配置。
 
 ### 进程隔离模式（推荐）
 
@@ -179,7 +181,7 @@ Thinking 开启，内置方案会将思考档位设为 `high`。
 
 ## VS Code Companion
 
-仓库中的 `vscode-extension` 提供 Windows 专用的 VS Code Companion。扩展在
+仓库中的 `vscode-extension` 提供 Windows 与 Ubuntu 版 VS Code Companion。扩展在
 Activity Bar 中提供原生侧边栏，直接显示当前工作区路由、Provider、模型和凭据
 状态，并可以一键启动官方 Anthropic Claude Code 扩展的新会话。状态栏与命令面板
 入口继续保留。
@@ -189,7 +191,7 @@ Activity Bar 中提供原生侧边栏，直接显示当前工作区路由、Prov
 和离线安装的备用方式。
 
 发布的 VSIX 内置同版本的 CC Router 桌面安装器。用户安装扩展后无需预先单独下载
-桌面程序；首次启用时确认一次，扩展会为当前 Windows 用户静默安装并打开桌面管理
+桌面程序；首次启用时确认一次，扩展会为当前用户安装并打开桌面管理
 工具。已有安装会被自动发现，也保留手动选择程序路径的恢复入口。
 
 如果已有安装版本过旧，桌面端保存后可能无法生成插件需要的共享 Provider 文件。
@@ -202,15 +204,15 @@ Companion 提供确认后执行的“修复或更新桌面端”命令，使用 
 
 扩展不会把 API Key 写入 VS Code 的用户设置、工作区设置或扩展状态。它配置
 Claude Code 官方提供的 `claudeProcessWrapper`，由随扩展打包的
-`cc-router-helper.exe` 在启动新进程时从 Windows Credential Manager 读取 Key。
+平台 helper 在启动新进程时从系统凭据存储读取 Key。
 桌面端和扩展共享的 `providers.json` 只包含非敏感 Provider 元数据。
 
-当前 Companion beta 仅支持本地 Windows 工作区，不支持 WSL、SSH 和 Dev
+当前 Companion 仅支持本地 Windows 和 Ubuntu 工作区，不支持 WSL、SSH 和 Dev
 Containers。已有 Claude Code 会话不会热切换，选择结果仅应用于新会话。
 
 ## 启动就绪检查
 
-桌面路由控制区会在启动前检查 Claude CLI、Credential Manager 凭据、工作目录和
+桌面路由控制区会在启动前检查 Claude CLI、系统凭据、工作目录和
 路由配置。它还会列出当前进程中可能影响 Claude Code 的环境变量名；隔离启动时
 这些变量会被清理或覆盖。诊断仅向前端返回变量名，不返回、记录或显示变量值。
 
@@ -224,7 +226,7 @@ Containers。已有 Claude Code 会话不会热切换，选择结果仅应用于
   执行前明确提示。
 
 用户选择的 Provider 仍会收到 Claude Code 发送的 prompt、代码和工具输出。
-Credential Manager 和进程环境也不能抵御已经以同一 Windows 用户权限运行的
+系统凭据存储和进程环境也不能抵御已经以同一用户权限运行的
 恶意程序。完整数据流和威胁边界见[安全模型](docs/SECURITY_MODEL.md)；漏洞请按照
 [安全策略](SECURITY.md)私下报告，不要在 Issue 中提交真实 Key 或敏感诊断信息。
 
@@ -234,10 +236,9 @@ Credential Manager 和进程环境也不能抵御已经以同一 Windows 用户�
 
 - Node.js 20 或更高版本
 - pnpm 10.33.0
-- [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)，
-  安装 `Desktop development with C++` 工作负载
-- [Rust stable MSVC toolchain](https://www.rust-lang.org/tools/install)
-- Microsoft Edge WebView2（现代 Windows 10/11 通常已经安装）
+- Rust stable toolchain
+- Windows：Microsoft C++ Build Tools（`Desktop development with C++`）与 WebView2
+- Ubuntu：Tauri 所需的 WebKitGTK、AppIndicator、Rsvg、DBus 开发包和 `patchelf`
 
 ### 开发与构建
 
@@ -252,10 +253,10 @@ pnpm dev
 # Tauri 桌面开发版
 pnpm desktop:dev
 
-# 生成 NSIS 安装包
+# Windows 生成 NSIS；Ubuntu 生成 DEB 与 AppImage
 pnpm desktop:build
 
-# 检查并生成 VS Code VSIX
+# 检查并生成当前平台的 VS Code VSIX
 pnpm vscode:check
 pnpm vscode:package
 ```
@@ -280,11 +281,11 @@ src/
   App.tsx                 Provider 编辑和路由控制 UI
   defaultProviders.ts     内置 Provider 模板
   nativeRouter.ts         Tauri IPC 边界
-  routerCommands.ts       脱敏 PowerShell / JSON 备用输出
+  routerCommands.ts       脱敏 PowerShell / Bash / JSON 备用输出
 
 src-tauri/src/
   commands.rs             Claude Code 启动和本地命令
-  credentials.rs          Windows Credential Manager
+  credentials.rs          Credential Manager / Linux Secret Service
   provider_store.rs       桌面端和扩展共享的无密钥 Provider 配置
   system_env.rs           Windows 用户环境读写
   backup.rs               无明文 Key 的路由备份与回滚
@@ -292,8 +293,8 @@ src-tauri/src/
 
 vscode-extension/
   src/                    Companion 状态栏、命令和 helper 调用
-  bin/                    打包时生成的 Windows helper
-  desktop/                打包时生成的同版本桌面安装器
+  bin/                    打包时生成的平台 helper
+  desktop/                打包时生成的同版本桌面安装包
 ```
 
 ## 参与项目

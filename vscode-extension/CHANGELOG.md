@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.0.0
+
+- Added native Ubuntu 22.04/24.04 x64 support using Linux Secret Service.
+- Added platform-specific Windows and Linux helpers and desktop bundles.
+- Kept process-isolated routing as the default on both platforms; Ubuntu does not modify shell profiles.
+- Promoted CC Router Companion from beta to its first stable extension release.
+
 ## 0.3.2
 
 - Bundled CC Router desktop `0.2.0-beta.3` with one-click Kimi Code profiles for

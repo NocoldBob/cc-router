@@ -2,7 +2,7 @@
   "name": "cc-router-companion",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "0.3.2",
+  "version": "1.0.0",
   "publisher": "NocoldBob",
   "license": "MIT",
   "repository": {
@@ -17,6 +17,8 @@
     "vscode": ">=1.90.0"
   },
   "categories": [
+    "AI",
+    "Chat",
     "Other"
   ],
   "keywords": [
@@ -67,7 +69,7 @@
       },
       {
         "view": "ccRouter.overview",
-        "contents": "请先打开一个本地 Windows 文件夹或工作区。\nOpen a local Windows folder or workspace first.",
+        "contents": "请先打开一个本地 Windows 或 Ubuntu 文件夹/工作区。\nOpen a local Windows or Ubuntu folder/workspace first.",
         "when": "ccRouter.noWorkspace"
       }
     ],
@@ -167,7 +169,7 @@
     "build:desktop": "pnpm --dir .. desktop:build",
     "copy:binaries": "node scripts/copy-binaries.mjs",
     "prepare:package": "pnpm build:desktop && pnpm build:helper && pnpm copy:binaries && pnpm compile",
-    "package:vsix": "pnpm prepare:package && vsce package --no-dependencies"
+    "package:vsix": "pnpm prepare:package && node scripts/package-vsix.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

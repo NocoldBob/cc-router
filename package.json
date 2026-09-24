@@ -1,8 +1,8 @@
 {
   "name": "cc-router",
   "private": true,
-  "version": "0.2.0-beta.3",
-  "description": "No-proxy, process-isolated Claude Code Provider launcher for Windows",
+  "version": "0.3.0",
+  "description": "No-proxy, process-isolated Claude Code Provider launcher for Windows and Ubuntu",
   "license": "MIT",
   "packageManager": "pnpm@10.33.0",
   "engines": {
@@ -20,7 +20,7 @@
   "scripts": {
     "dev": "vite",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build",
+    "desktop:build": "node scripts/build-desktop.mjs",
     "desktop:info": "tauri info",
     "vscode:check": "pnpm --dir vscode-extension check",
     "vscode:package": "pnpm --dir vscode-extension package:vsix",

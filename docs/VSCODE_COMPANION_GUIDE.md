@@ -1,15 +1,15 @@
 # 在 VS Code 中使用 CC Router 与 Claude Code
 
-本指南适用于希望在本地 Windows VS Code 工作区中，通过 CC Router 为 Anthropic
+本指南适用于希望在本地 Windows 或 Ubuntu VS Code 工作区中，通过 CC Router 为 Anthropic
 官方 Claude Code 扩展选择 DeepSeek、Kimi 或自定义 Anthropic 兼容 Provider 的用户。
 
 CC Router Companion 不运行 HTTP 代理。它为每个工作区保存 Provider 选择，并在
 启动新的 Claude Code 子进程时注入对应路由。API Key 始终保存在 Windows
-Credential Manager 中，不会写入 VS Code 设置或项目文件。
+Credential Manager 或 Linux Secret Service 中，不会写入 VS Code 设置或项目文件。
 
 ## 使用前准备
 
-- Windows 10 或 Windows 11 x64。
+- Windows 10/11 x64，或 Ubuntu Desktop 22.04/24.04 x64。
 - 本地 VS Code 工作区。WSL、SSH 和 Dev Containers 暂不支持。
 - 一个可用的 Provider API Key。
 - Anthropic 官方 `Claude Code` VS Code 扩展。
@@ -34,7 +34,8 @@ VS Code 会处理依赖；如果 Claude Code 没有自动安装，请在扩展�
 ### 从 VSIX 手动安装（备用）
 
 1. 从本项目 [GitHub Releases](https://github.com/NocoldBob/cc-router/releases)
-   下载最新的 `cc-router-companion-*.vsix`。
+下载与你的平台匹配的 `cc-router-companion-*-win32-x64.vsix` 或
+`cc-router-companion-*-linux-x64.vsix`。
 2. 在 VS Code 扩展面板右上角点击 `...`。
 3. 选择 **从 VSIX 安装... / Install from VSIX...**。
 4. 选择下载的 VSIX，等待 VS Code 显示安装成功。
@@ -42,10 +43,11 @@ VS Code 会处理依赖；如果 Claude Code 没有自动安装，请在扩展�
 
 首次启用时，插件会询问是否安装内置的 CC Router 桌面管理工具。点击
 **立即安装 / Install Now** 即可，无需预先单独下载桌面安装包。安装范围是当前
-Windows 用户，默认路径为：
+系统用户。默认路径为：
 
 ```text
 %LOCALAPPDATA%\Programs\CC Router\cc-router.exe
+Ubuntu: ~/.local/share/cc-router/cc-router.AppImage
 ```
 
 如果电脑上已经安装过 CC Router，插件会自动发现并使用现有安装。安装器当前没有
@@ -61,7 +63,7 @@ Windows 用户，默认路径为：
 1. 在左侧选择 DeepSeek、Kimi Global、Kimi Code，或点击 `+` 创建自定义 Provider。
 2. 检查 Base URL、主模型、快速模型和其他模型映射。
 3. 在 API Key 区域只粘贴原始令牌，不要添加 `Bearer`，也不要粘贴说明文字或引号。
-4. 点击保存 API Key，将其写入 Windows Credential Manager。
+4. 点击保存 API Key，将其写入系统凭据存储。
 5. 点击页面顶部的 **保存配置**，生成供 VS Code 扩展读取的无密钥 Provider 目录。
 
 共享配置只包含 Provider 名称、Endpoint、模型和启用状态。API Key 不会进入该文件。
@@ -151,13 +153,14 @@ CC Router: Repair or Update Desktop App
 ```
 
 确认后，插件会关闭正在运行的旧桌面端，使用 VSIX 内置版本覆盖安装并重新打开。
-Provider 配置会保留，API Key 仍在 Windows Credential Manager 中。修复后若没有自动
+Provider 配置会保留，API Key 仍在系统凭据存储中。修复后若没有自动
 恢复，请在桌面端再次点击 **保存配置**，再刷新侧栏。
 
-桌面端和 VS Code 必须使用同一个 Windows 用户账户运行。共享文件位于：
+桌面端和 VS Code 必须使用同一个系统用户账户运行。共享文件位于：
 
 ```text
 %APPDATA%\local.ccrouter.desktop\providers.json
+Ubuntu: ~/.config/local.ccrouter.desktop/providers.json
 ```
 
 该文件只包含 Provider 名称、Endpoint 和模型等非敏感配置，不包含 API Key。
@@ -179,7 +182,7 @@ Provider 提供的原始令牌并重新保存。
 ### 桌面端没有自动打开
 
 点击侧栏中的 **打开 CC Router 桌面端**。插件会依次检查运行中的窗口、默认安装
-目录和 Windows 卸载注册表；仍未找到时，可以手动选择 `cc-router.exe`。
+目录；Windows 还会检查卸载注册表。仍未找到时，可以手动选择 `cc-router.exe` 或 AppImage。
 
 ### Claude Code 已配置其他 wrapper
 
@@ -191,8 +194,8 @@ Provider 提供的原始令牌并重新保存。
 卸载扩展前，建议先运行 `CC Router: Restore Previous Claude Wrapper`。
 
 VS Code 扩展和桌面管理工具是两个独立安装项。移除扩展不会自动删除桌面端，也不会
-删除 Windows Credential Manager 中的 Provider 凭据。桌面端可在 Windows
-“已安装的应用”中卸载；凭据应在桌面端逐个删除，或使用 Windows 凭据管理器处理。
+删除系统凭据存储中的 Provider 凭据。Windows 桌面端可在“已安装的应用”中卸载；
+Ubuntu 可删除 `~/.local/share/cc-router/cc-router.AppImage`。凭据建议在桌面端逐个删除。
 
 ## 安全边界
 
@@ -200,6 +203,6 @@ VS Code 扩展和桌面管理工具是两个独立安装项。移除扩展不会
 - 原生 helper 只在启动新的 Claude Code 子进程时读取所选凭据。
 - CC Router 不运行 HTTP 代理，不读取或记录 prompt、代码、回答和 Token 用量。
 - 所选 Provider 仍会接收 Claude Code 发出的模型请求。
-- 当前只支持本地 Windows 工作区。
+- 当前支持本地 Windows 和 Ubuntu 工作区。
 
 更多边界说明见[安全模型](SECURITY_MODEL.md)。

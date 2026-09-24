@@ -8,7 +8,16 @@ static CREDENTIAL_LOCK: Mutex<()> = Mutex::new(());
 
 fn entry(service: &str, username: &str) -> Result<keyring::Entry, String> {
     keyring::Entry::new(service, username)
-        .map_err(|error| format!("Windows Credential Manager is unavailable: {error}"))
+        .map_err(|error| format!("{} is unavailable: {error}", credential_store_name()))
+}
+
+pub fn credential_store_name() -> &'static str {
+    #[cfg(windows)]
+    return "Windows Credential Manager";
+    #[cfg(target_os = "linux")]
+    return "Linux Secret Service";
+    #[allow(unreachable_code)]
+    "System credential store"
 }
 
 pub fn save_provider_token(provider_id: &str, token: &str) -> Result<(), String> {
@@ -77,7 +86,7 @@ pub fn delete_backup_token() -> Result<(), String> {
 fn credential_guard() -> Result<std::sync::MutexGuard<'static, ()>, String> {
     CREDENTIAL_LOCK
         .lock()
-        .map_err(|_| "Credential Manager access lock was poisoned.".into())
+        .map_err(|_| "Credential store access lock was poisoned.".into())
 }
 
 fn delete_entry(service: &str, username: &str) -> Result<(), String> {

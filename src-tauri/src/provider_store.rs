@@ -96,10 +96,26 @@ pub fn data_directory() -> Result<PathBuf, String> {
     if let Some(path) = env::var_os("CC_ROUTER_DATA_DIR").filter(|value| !value.is_empty()) {
         return Ok(PathBuf::from(path));
     }
-    let app_data = env::var_os("APPDATA").ok_or_else(|| {
-        "APPDATA is unavailable; CC Router data directory cannot be located.".to_string()
-    })?;
-    Ok(PathBuf::from(app_data).join(APP_DIRECTORY))
+    #[cfg(windows)]
+    {
+        let app_data = env::var_os("APPDATA").ok_or_else(|| {
+            "APPDATA is unavailable; CC Router data directory cannot be located.".to_string()
+        })?;
+        return Ok(PathBuf::from(app_data).join(APP_DIRECTORY));
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(config_home) = env::var_os("XDG_CONFIG_HOME").filter(|value| !value.is_empty())
+        {
+            return Ok(PathBuf::from(config_home).join(APP_DIRECTORY));
+        }
+        let home = env::var_os("HOME").ok_or_else(|| {
+            "HOME is unavailable; CC Router data directory cannot be located.".to_string()
+        })?;
+        return Ok(PathBuf::from(home).join(".config").join(APP_DIRECTORY));
+    }
+    #[allow(unreachable_code)]
+    Err("This operating system is not supported.".into())
 }
 
 fn validate_catalog(providers: &[ProviderConfig]) -> Result<(), String> {
@@ -145,18 +161,29 @@ fn normalize_workspace(path: &Path) -> Result<String, String> {
     let canonical = path
         .canonicalize()
         .map_err(|error| format!("Could not resolve workspace directory: {error}"))?;
-    Ok(canonical
-        .to_string_lossy()
-        .trim_end_matches(['\\', '/'])
-        .replace('/', "\\")
-        .to_ascii_lowercase())
+    Ok(normalize_canonical_path(&canonical))
 }
 
 fn path_contains(workspace: &str, candidate: &str) -> bool {
-    workspace == candidate
-        || workspace
-            .strip_prefix(candidate)
-            .is_some_and(|suffix| suffix.starts_with('\\'))
+    Path::new(workspace).starts_with(Path::new(candidate))
+}
+
+fn normalize_canonical_path(path: &Path) -> String {
+    #[cfg(windows)]
+    return path
+        .to_string_lossy()
+        .trim_end_matches(['\\', '/'])
+        .replace('/', "\\")
+        .to_ascii_lowercase();
+    #[cfg(not(windows))]
+    {
+        let value = path.to_string_lossy();
+        if value == "/" {
+            "/".into()
+        } else {
+            value.trim_end_matches('/').into()
+        }
+    }
 }
 
 fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<(), String> {
@@ -219,11 +246,27 @@ mod tests {
         assert!(!json.contains("API Key"));
     }
 
+    #[cfg(windows)]
     #[test]
     fn workspace_match_requires_a_path_boundary() {
         assert!(path_contains("c:\\code\\app\\src", "c:\\code\\app"));
         assert!(path_contains("c:\\code\\app", "c:\\code\\app"));
         assert!(!path_contains("c:\\code\\application", "c:\\code\\app"));
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn workspace_match_is_case_sensitive_and_requires_a_path_boundary() {
+        assert!(path_contains(
+            "/home/user/code/app/src",
+            "/home/user/code/app"
+        ));
+        assert!(path_contains("/home/user/code/app", "/home/user/code/app"));
+        assert!(!path_contains(
+            "/home/user/code/application",
+            "/home/user/code/app"
+        ));
+        assert!(!path_contains("/home/user/code/App", "/home/user/code/app"));
     }
 
     #[test]

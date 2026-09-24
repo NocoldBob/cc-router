@@ -38,7 +38,10 @@ export function resolveHelperPath(context: vscode.ExtensionContext): string {
     .getConfiguration('ccRouter')
     .get<string>('helperPath', '')
     .trim()
-  return configured || context.asAbsolutePath('bin/cc-router-helper.exe')
+  if (configured) return configured
+  const platform = process.platform === 'win32' ? 'win32-x64' : 'linux-x64'
+  const executable = process.platform === 'win32' ? 'cc-router-helper.exe' : 'cc-router-helper'
+  return context.asAbsolutePath(`bin/${platform}/${executable}`)
 }
 
 export function helperExists(context: vscode.ExtensionContext): boolean {

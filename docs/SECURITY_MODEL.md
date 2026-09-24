@@ -2,14 +2,14 @@
 
 ## Scope
 
-CC Router is a Windows-only launcher for Claude Code routes that expose an
+CC Router is a Windows and Ubuntu launcher for Claude Code routes that expose an
 Anthropic-compatible API. It does not run an HTTP proxy, translate protocols,
 inspect model requests, or provide cloud synchronization.
 
 ## Recommended Data Flow
 
 ```text
-Windows Credential Manager
+OS credential store
           |
           | Rust backend reads the selected key
           v
@@ -28,9 +28,9 @@ user receives the prompts, code, tool output, and other data Claude Code sends.
 | Data | Location | Contains API key |
 | --- | --- | --- |
 | Provider names, URLs, models, and UI settings | WebView `localStorage` | No |
-| Provider API keys | Windows Credential Manager | Yes |
+| Provider API keys | Credential Manager / Linux Secret Service | Yes |
 | Previous route snapshot | Tauri application data directory | No |
-| Previous route API key | Windows Credential Manager | Yes |
+| Previous route API key | Windows Credential Manager | Yes, Windows only |
 | Process-scoped route | New Claude Code process environment | Yes |
 | Optional persistent route | Windows user environment | Yes, plaintext |
 
@@ -42,21 +42,21 @@ application removes the legacy `authToken` field when loading old Provider data.
 - The WebView receives credential status, never a stored credential value.
 - The Rust backend reads credentials only for launch, persistent apply, or
   rollback operations initiated by the user.
-- Process-scoped launch does not edit Claude configuration files or Windows
-  user environment variables.
+- Process-scoped launch does not edit Claude configuration files, user
+  environment variables, or shell profiles.
 - Persistent routing is confirmation-gated and creates a key-free JSON backup;
   any previous token is backed up separately in Credential Manager.
-- Base URLs must use HTTPS except for explicit localhost development routes.
+- Base URLs should use HTTPS; HTTP is accepted only when the user explicitly configures a trusted intranet endpoint.
 
 ## Limitations
 
-- Malware or another process running as the same Windows user may be able to
+- Malware or another process running as the same OS user may be able to
   access user credentials or inspect process environments.
 - Persistent routing stores `ANTHROPIC_AUTH_TOKEN` as a plaintext user
   environment variable until it is cleared or replaced.
 - Provider security, retention, billing, availability, and terms are outside
   the CC Router trust boundary.
-- Unsigned beta installers may trigger Windows SmartScreen or show an unknown
+- Unsigned installers may trigger Windows SmartScreen or show an unknown
   publisher warning.
 - CC Router cannot make an untrusted Provider safe.
 

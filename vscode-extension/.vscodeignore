@@ -3,5 +3,7 @@ src/**
 scripts/**
 tsconfig.json
 bin/.gitkeep
+bin/cc-router-helper.exe
 desktop/.gitkeep
+desktop/cc-router-desktop-setup.exe
 *.vsix

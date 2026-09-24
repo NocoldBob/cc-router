@@ -1,7 +1,7 @@
 [package]
 name = "cc-router"
-version = "0.2.0-beta.3"
-description = "Local Claude Code route manager for Windows"
+version = "0.3.0"
+description = "Local Claude Code route manager for Windows and Ubuntu"
 authors = ["CC Router contributors"]
 license = "MIT"
 repository = "https://github.com/NocoldBob/cc-router"
@@ -22,5 +22,10 @@ tauri-build = { version = "2.6.3", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "2.11.5", features = [] }
-keyring = { version = "3.6.3", features = ["windows-native"] }
 ureq = { version = "2.12", default-features = false, features = ["tls", "json"] }
+
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3.6.3", features = ["windows-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust"] }

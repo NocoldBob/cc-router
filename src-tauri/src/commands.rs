@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::env;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -18,6 +18,7 @@ use crate::models::{
 use crate::provider_store;
 use crate::system_env;
 
+#[cfg(windows)]
 const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
 const CLAUDE_MODE_VARIABLES: [&str; 4] = [
     "ANTHROPIC_API_KEY",
@@ -31,10 +32,11 @@ pub fn runtime_info(cli_path: Option<String>) -> RuntimeInfo {
     let resolved = resolve_claude_cli(cli_path.as_deref());
     RuntimeInfo {
         native: true,
-        platform: "windows".into(),
+        platform: platform_name().into(),
         cli_available: resolved.is_some(),
         cli_path: resolved.map(|path| path.to_string_lossy().into_owned()),
-        credential_store: "Windows Credential Manager".into(),
+        credential_store: credentials::credential_store_name().into(),
+        persistent_route_supported: cfg!(windows),
     }
 }
 
@@ -104,20 +106,32 @@ pub fn get_user_route_status(
     route: ProviderRoute,
 ) -> Result<UserRouteStatus, String> {
     route.validate()?;
-    let current = system_env::read_user_route()?.snapshot;
-    let expected = route
-        .environment(String::new())
-        .into_iter()
-        .collect::<HashMap<_, _>>();
-    let matches_selected = ROUTE_VARIABLES
-        .iter()
-        .filter(|name| **name != "ANTHROPIC_AUTH_TOKEN")
-        .all(|name| expected.get(*name).map(String::as_str) == snapshot_value(&current, name));
-    Ok(UserRouteStatus {
-        route: current,
-        matches_selected,
-        backup_available: backup::exists(&app),
-    })
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        return Ok(UserRouteStatus {
+            route: Default::default(),
+            matches_selected: false,
+            backup_available: false,
+        });
+    }
+    #[cfg(windows)]
+    {
+        let current = system_env::read_user_route()?.snapshot;
+        let expected = route
+            .environment(String::new())
+            .into_iter()
+            .collect::<HashMap<_, _>>();
+        let matches_selected = ROUTE_VARIABLES
+            .iter()
+            .filter(|name| **name != "ANTHROPIC_AUTH_TOKEN")
+            .all(|name| expected.get(*name).map(String::as_str) == snapshot_value(&current, name));
+        Ok(UserRouteStatus {
+            route: current,
+            matches_selected,
+            backup_available: backup::exists(&app),
+        })
+    }
 }
 
 #[tauri::command]
@@ -134,33 +148,7 @@ pub fn launch_claude(
     let working_directory = validate_working_directory(working_directory)?;
     let environment = route.environment(token);
 
-    let mut command = Command::new("powershell.exe");
-    command
-        .args(["-NoLogo", "-NoExit", "-Command"])
-        .arg(format!(
-            "& {}",
-            powershell_quote(&executable.to_string_lossy())
-        ))
-        .env_remove("ANTHROPIC_API_KEY")
-        .env_remove("CLAUDE_CODE_USE_BEDROCK")
-        .env_remove("CLAUDE_CODE_USE_VERTEX")
-        .env_remove("CLAUDE_CODE_USE_FOUNDRY")
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit());
-    for name in ROUTE_VARIABLES {
-        command.env_remove(name);
-    }
-    command.envs(environment);
-    if let Some(directory) = working_directory {
-        command.current_dir(directory);
-    }
-    #[cfg(windows)]
-    command.creation_flags(CREATE_NEW_CONSOLE);
-
-    let child = command
-        .spawn()
-        .map_err(|error| format!("Could not launch Claude Code: {error}"))?;
+    let child = launch_isolated_process(&executable, working_directory.as_deref(), environment)?;
 
     Ok(ActionResult {
         message: format!(
@@ -174,6 +162,7 @@ pub fn launch_claude(
 
 #[tauri::command]
 pub fn apply_user_route(app: AppHandle, route: ProviderRoute) -> Result<ActionResult, String> {
+    persistent_route_guard()?;
     route.validate()?;
     let token = credentials::read_provider_token(&route.id)?;
     let previous = system_env::read_user_route()?;
@@ -196,6 +185,7 @@ pub fn apply_user_route(app: AppHandle, route: ProviderRoute) -> Result<ActionRe
 
 #[tauri::command]
 pub fn clear_user_route(app: AppHandle) -> Result<ActionResult, String> {
+    persistent_route_guard()?;
     let previous = system_env::read_user_route()?;
     backup::save(&app, &previous)?;
     system_env::clear_user_route()?;
@@ -209,6 +199,7 @@ pub fn clear_user_route(app: AppHandle) -> Result<ActionResult, String> {
 
 #[tauri::command]
 pub fn rollback_user_route(app: AppHandle) -> Result<ActionResult, String> {
+    persistent_route_guard()?;
     let (snapshot, token) = backup::load(&app)?;
     system_env::restore_user_route(&snapshot, token)?;
     backup::clear(&app)?;
@@ -228,6 +219,7 @@ fn resolve_claude_cli(custom_path: Option<&str>) -> Option<PathBuf> {
         }
     }
 
+    #[cfg(windows)]
     if let Ok(output) = Command::new("where.exe").arg("claude").output() {
         if output.status.success() {
             if let Some(path) = String::from_utf8_lossy(&output.stdout)
@@ -241,17 +233,137 @@ fn resolve_claude_cli(custom_path: Option<&str>) -> Option<PathBuf> {
         }
     }
 
+    #[cfg(target_os = "linux")]
+    if let Some(path) = find_in_path("claude") {
+        return Some(path);
+    }
+
     let mut candidates = Vec::new();
-    if let Some(profile) = env::var_os("USERPROFILE") {
-        candidates.push(PathBuf::from(profile).join(".local\\bin\\claude.exe"));
+    #[cfg(windows)]
+    {
+        if let Some(profile) = env::var_os("USERPROFILE") {
+            candidates.push(PathBuf::from(profile).join(".local\\bin\\claude.exe"));
+        }
+        if let Some(app_data) = env::var_os("APPDATA") {
+            candidates.push(PathBuf::from(app_data).join("npm\\claude.cmd"));
+        }
+        if let Some(local_app_data) = env::var_os("LOCALAPPDATA") {
+            candidates
+                .push(PathBuf::from(local_app_data).join("Microsoft\\WinGet\\Links\\claude.exe"));
+        }
     }
-    if let Some(app_data) = env::var_os("APPDATA") {
-        candidates.push(PathBuf::from(app_data).join("npm\\claude.cmd"));
-    }
-    if let Some(local_app_data) = env::var_os("LOCALAPPDATA") {
-        candidates.push(PathBuf::from(local_app_data).join("Microsoft\\WinGet\\Links\\claude.exe"));
+    #[cfg(target_os = "linux")]
+    if let Some(home) = env::var_os("HOME") {
+        let home = PathBuf::from(home);
+        candidates.push(home.join(".local/bin/claude"));
+        candidates.push(home.join(".npm-global/bin/claude"));
     }
     candidates.into_iter().find(|path| path.is_file())
+}
+
+fn platform_name() -> &'static str {
+    #[cfg(windows)]
+    return "windows";
+    #[cfg(target_os = "linux")]
+    return "linux";
+    #[allow(unreachable_code)]
+    "unsupported"
+}
+
+fn persistent_route_guard() -> Result<(), String> {
+    if cfg!(windows) {
+        Ok(())
+    } else {
+        Err("Persistent default routing is not available on Ubuntu. Use process-isolated launch or the VS Code Companion.".into())
+    }
+}
+
+fn configure_isolated_environment(
+    command: &mut Command,
+    environment: Vec<(String, String)>,
+    working_directory: Option<&Path>,
+) {
+    for name in CLAUDE_MODE_VARIABLES.iter().chain(ROUTE_VARIABLES.iter()) {
+        command.env_remove(name);
+    }
+    command.envs(environment);
+    if let Some(directory) = working_directory {
+        command.current_dir(directory);
+    }
+}
+
+#[cfg(windows)]
+fn launch_isolated_process(
+    executable: &Path,
+    working_directory: Option<&Path>,
+    environment: Vec<(String, String)>,
+) -> Result<Child, String> {
+    let mut command = Command::new("powershell.exe");
+    command
+        .args(["-NoLogo", "-NoExit", "-Command"])
+        .arg(format!(
+            "& {}",
+            powershell_quote(&executable.to_string_lossy())
+        ))
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .creation_flags(CREATE_NEW_CONSOLE);
+    configure_isolated_environment(&mut command, environment, working_directory);
+    command
+        .spawn()
+        .map_err(|error| format!("Could not launch Claude Code: {error}"))
+}
+
+#[cfg(target_os = "linux")]
+fn launch_isolated_process(
+    executable: &Path,
+    working_directory: Option<&Path>,
+    environment: Vec<(String, String)>,
+) -> Result<Child, String> {
+    let (terminal, arguments) = resolve_linux_terminal().ok_or_else(|| {
+        "No supported terminal emulator was found. Install GNOME Terminal, Konsole, Kitty, or Alacritty.".to_string()
+    })?;
+    let mut command = Command::new(terminal);
+    command
+        .args(arguments)
+        .arg(executable)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    configure_isolated_environment(&mut command, environment, working_directory);
+    command
+        .spawn()
+        .map_err(|error| format!("Could not launch Claude Code terminal: {error}"))
+}
+
+#[cfg(target_os = "linux")]
+fn resolve_linux_terminal() -> Option<(PathBuf, &'static [&'static str])> {
+    [
+        ("x-terminal-emulator", &["-e"][..]),
+        ("gnome-terminal", &["--"][..]),
+        ("konsole", &["-e"][..]),
+        ("kitty", &["--"][..]),
+        ("alacritty", &["-e"][..]),
+    ]
+    .into_iter()
+    .find_map(|(name, arguments)| find_in_path(name).map(|path| (path, arguments)))
+}
+
+#[cfg(target_os = "linux")]
+fn find_in_path(name: &str) -> Option<PathBuf> {
+    env::var_os("PATH").and_then(|path| {
+        env::split_paths(&path)
+            .map(|directory| directory.join(name))
+            .find(|candidate| candidate.is_file() && is_executable(candidate))
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn is_executable(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    path.metadata()
+        .is_ok_and(|metadata| metadata.permissions().mode() & 0o111 != 0)
 }
 
 fn validate_working_directory(value: Option<String>) -> Result<Option<PathBuf>, String> {
@@ -281,6 +393,7 @@ where
         .collect()
 }
 
+#[cfg(windows)]
 fn powershell_quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
 }
@@ -306,6 +419,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
+    #[cfg(windows)]
     #[test]
     fn quotes_powershell_paths() {
         assert_eq!(

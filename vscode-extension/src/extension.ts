@@ -2,6 +2,8 @@ import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import * as vscode from 'vscode'
 import {
+  bundledDesktopRelativePath,
+  credentialStoreLabel,
   findDesktopExecutable,
   focusRunningDesktop,
   installDesktop,
@@ -170,8 +172,8 @@ async function applyProvider(
   if (!provider.credentialConfigured) {
     const action = await vscode.window.showWarningMessage(
       text(
-        `${provider.displayName} 尚未在 Windows Credential Manager 中配置 API Key。`,
-        `${provider.displayName} has no API Key in Windows Credential Manager.`,
+        `${provider.displayName} 尚未在 ${credentialStoreLabel()} 中配置 API Key。`,
+        `${provider.displayName} has no API Key in ${credentialStoreLabel()}.`,
       ),
       text('打开 CC Router', 'Open CC Router'),
     )
@@ -320,8 +322,8 @@ async function probeConnection(
     if (!provider.credentialConfigured) {
       const action = await vscode.window.showWarningMessage(
         text(
-          `${provider.displayName} 尚未在 Windows Credential Manager 中配置 API Key。`,
-          `${provider.displayName} has no API Key in Windows Credential Manager.`,
+          `${provider.displayName} 尚未在 ${credentialStoreLabel()} 中配置 API Key。`,
+          `${provider.displayName} has no API Key in ${credentialStoreLabel()}.`,
         ),
         text('打开 CC Router', 'Open CC Router'),
       )
@@ -396,8 +398,8 @@ async function refreshStatus(
   if (!environmentSupported(false)) {
     status.text = `$(warning) ${text('CC Router 不可用', 'CC Router unavailable')}`
     status.tooltip = text(
-      '当前仅支持本地 Windows 工作区。',
-      'CC Router currently supports local Windows workspaces only.',
+      '当前仅支持本地 Windows 或 Ubuntu 工作区。',
+      'CC Router currently supports local Windows or Ubuntu workspaces.',
     )
     return
   }
@@ -442,12 +444,12 @@ function currentWorkspace(): string | undefined {
 }
 
 function environmentSupported(showMessage = true): boolean {
-  const supported = process.platform === 'win32' && !vscode.env.remoteName
+  const supported = (process.platform === 'win32' || process.platform === 'linux') && !vscode.env.remoteName
   if (!supported && showMessage) {
     void vscode.window.showWarningMessage(
       text(
-        'CC Router 当前仅支持本地 Windows 工作区，暂不支持 WSL、SSH 和 Dev Containers。',
-        'CC Router currently supports local Windows workspaces. WSL, SSH and Dev Containers are not enabled in this beta.',
+        'CC Router 当前仅支持本地 Windows 或 Ubuntu 工作区，暂不支持 WSL、SSH 和 Dev Containers。',
+        'CC Router supports local Windows or Ubuntu workspaces. WSL, SSH and Dev Containers are not supported.',
       ),
     )
   }
@@ -513,7 +515,7 @@ async function repairDesktop(
   refresh: () => Promise<void>,
 ): Promise<void> {
   if (!environmentSupported()) return
-  const installer = context.asAbsolutePath('desktop/cc-router-desktop-setup.exe')
+  const installer = context.asAbsolutePath(bundledDesktopRelativePath())
   if (!existsSync(installer)) {
     void vscode.window.showErrorMessage(
       text(
@@ -527,8 +529,8 @@ async function repairDesktop(
   const confirm = text('修复并重新打开', 'Repair and Reopen')
   const choice = await vscode.window.showWarningMessage(
     text(
-      '这会关闭正在运行的 CC Router，并用扩展内置的匹配版本覆盖安装。Provider 配置会保留，API Key 仍保存在 Windows Credential Manager。',
-      'This closes the running CC Router and reinstalls the matching bundled version. Provider settings are preserved and API Keys remain in Windows Credential Manager.',
+      `这会关闭正在运行的 CC Router，并用扩展内置的匹配版本覆盖安装。Provider 配置会保留，API Key 仍保存在 ${credentialStoreLabel()}。`,
+      `This closes the running CC Router and reinstalls the matching bundled version. Provider settings are preserved and API Keys remain in ${credentialStoreLabel()}.`,
     ),
     { modal: true },
     confirm,
@@ -602,14 +604,14 @@ async function openDesktop(context: vscode.ExtensionContext): Promise<void> {
   const configuration = vscode.workspace.getConfiguration('ccRouter')
   const configured = configuration.get<string>('desktopPath', '').trim()
   let executable = await findDesktopExecutable(configured)
-  const installer = context.asAbsolutePath('desktop/cc-router-desktop-setup.exe')
+  const installer = context.asAbsolutePath(bundledDesktopRelativePath())
   if (!executable && existsSync(installer)) {
     const install = text('立即安装', 'Install Now')
     const locate = text('选择已有程序', 'Locate Existing App')
     const choice = await vscode.window.showInformationMessage(
       text(
-        'CC Router Companion 已包含桌面管理工具。是否现在为当前 Windows 用户安装？安装后可以直接管理 Provider 和 API Key。',
-        'CC Router Companion includes the desktop manager. Install it for the current Windows user now to manage Providers and API Keys?',
+        'CC Router Companion 已包含当前系统的桌面管理工具。是否现在为当前用户安装？安装后可以直接管理 Provider 和 API Key。',
+        'CC Router Companion includes the desktop manager for this platform. Install it for the current user now?',
       ),
       { modal: true },
       install,
@@ -645,8 +647,8 @@ async function openDesktop(context: vscode.ExtensionContext): Promise<void> {
     const openReleases = text('下载安装包', 'Open Releases')
     const choice = await vscode.window.showWarningMessage(
       text(
-        '未自动找到 CC Router 桌面端。可以选择本机已有的 cc-router.exe，或下载安装包。',
-        'CC Router desktop was not found automatically. Locate an existing cc-router.exe or download the installer.',
+        '未自动找到 CC Router 桌面端。可以选择本机已有程序，或下载安装包。',
+        'CC Router desktop was not found automatically. Locate an existing app or download the installer.',
       ),
       locate,
       openReleases,
@@ -679,7 +681,9 @@ async function locateDesktopExecutable(
     canSelectFiles: true,
     canSelectFolders: false,
     canSelectMany: false,
-    filters: { [text('Windows 程序', 'Windows Executable')]: ['exe'] },
+    filters: process.platform === 'win32'
+      ? { [text('Windows 程序', 'Windows Executable')]: ['exe'] }
+      : { AppImage: ['AppImage'] },
   })
   const executable = picked?.[0]?.fsPath
   if (executable) {
@@ -689,15 +693,18 @@ async function locateDesktopExecutable(
 }
 
 function pathsEqual(left: string, right: string): boolean {
-  return left.trim().replaceAll('/', '\\').toLowerCase() === right.trim().replaceAll('/', '\\').toLowerCase()
+  if (process.platform === 'win32') {
+    return left.trim().replaceAll('/', '\\').toLowerCase() === right.trim().replaceAll('/', '\\').toLowerCase()
+  }
+  return left.trim() === right.trim()
 }
 
 function localizedError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
   if (sharedCatalogMissing(error)) {
     return text(
-      '尚未生成共享 Provider 配置。可能打开了旧版桌面端，或桌面端与 VS Code 使用了不同的 Windows 账户。请修复/更新桌面端后重新保存。',
-      'Shared Provider configuration is missing. The desktop app may be outdated or running under a different Windows account. Repair/update it, then save again.',
+      '尚未生成共享 Provider 配置。可能打开了旧版桌面端，或桌面端与 VS Code 使用了不同的系统账户。请修复/更新桌面端后重新保存。',
+      'Shared Provider configuration is missing. The desktop app may be outdated or running under a different OS account. Repair/update it, then save again.',
     )
   }
   return message.replace(/^CC Router:\s*/, '')

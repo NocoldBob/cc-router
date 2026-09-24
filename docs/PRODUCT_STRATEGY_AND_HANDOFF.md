@@ -6,7 +6,7 @@
 
 ## 1. 一句话定位
 
-CC Router 是一个面向 Windows 的 Claude Code 路由启动器：不运行本地 API 代理，通过进程级环境变量为不同 Claude Code 会话隔离 DeepSeek、Kimi 等 Anthropic 兼容 Provider，并使用 Windows Credential Manager 保存 API Key。
+CC Router 是一个面向 Windows 与 Ubuntu 的 Claude Code 路由启动器：不运行本地 API 代理，通过进程级环境变量为不同 Claude Code 会话隔离 DeepSeek、Kimi 等 Anthropic 兼容 Provider，并使用系统凭据存储保存 API Key。
 
 推荐对外表述：
 
@@ -14,24 +14,24 @@ CC Router 是一个面向 Windows 的 Claude Code 路由启动器：不运行本
 
 英文短句：
 
-> Your keys stay in Windows. Your prompts never pass through the router.
+> Your keys stay in the OS credential store. Your prompts never pass through the router.
 
 ## 2. 当前产品边界
 
 ### 已实现
 
-- Windows Tauri 2 桌面应用。
+- Windows 与 Ubuntu Tauri 2 桌面应用。
 - 管理 DeepSeek、Kimi Global、Kimi Code K3/K2.7 Code 和自定义 Anthropic 兼容 Provider。
-- API Key 保存到 Windows Credential Manager，前端只获取“是否已配置”。
+- API Key 保存到 Windows Credential Manager 或 Linux Secret Service，前端只获取“是否已配置”。
 - 向新启动的 Claude Code 子进程注入路由，不修改全局环境。
 - 可选地写入 Windows 用户环境，供新终端和重启后的 VS Code Claude Code 插件读取。
-- 提供 Windows VS Code Companion beta，为每个本地工作区选择 Provider，并通过
+- 提供 Windows 与 Ubuntu VS Code Companion，为每个本地工作区选择 Provider，并通过
   Claude Code 的受支持进程 wrapper 启动隔离的新会话。
 - VS Code Companion 的 VSIX 内置同版本桌面安装器，首次启用时经用户确认后为当前
-  Windows 用户安装；不要求用户预先单独下载桌面端。
+  当前系统用户安装；不要求用户预先单独下载桌面端。
 - 系统写入前备份旧路由，支持一次回滚。
 - 同步管理 11 个 Claude Code 路由、模型、子代理、effort 和上下文变量。
-- 生成脱敏的 PowerShell 和 `settings.json` 备用配置。
+- 生成脱敏的 PowerShell、Bash 和 `settings.json` 备用配置。
 - Provider 导入导出不包含 API Key。
 - 启动前检查 CLI、凭据、工作目录和路由配置，并仅按名称提示将被隔离的环境变量。
 - 内置 Provider 模板显示最后验证日期和官方文档入口。
@@ -41,7 +41,7 @@ CC Router 是一个面向 Windows 的 Claude Code 路由启动器：不运行本
 
 ### 当前未实现
 
-- macOS 和 Linux。
+- macOS 和 Ubuntu 之外的 Linux 发行版。
 - Codex、Gemini CLI、OpenCode 等其他工具的配置管理。
 - Anthropic Messages 与 OpenAI Responses/Chat Completions 的协议转换。
 - 本地代理、热切换、自动故障转移、熔断和健康检查。
@@ -57,7 +57,7 @@ CC Router 是一个面向 Windows 的 Claude Code 路由启动器：不运行本
 推荐模式的数据路径：
 
 ```text
-Windows Credential Manager
+OS credential store
           |
           | Rust 后端读取 Key
           v
@@ -75,13 +75,13 @@ CC Router 不在 HTTP 请求路径中。应用关闭后，已经启动的 Claude
 - Key 不写入 Provider JSON、`localStorage` 或项目文件。
 - Key 不返回给 WebView 前端。
 - Key 不出现在应用生成的状态输出和 Provider 导出文件中。
-- 进程隔离模式不修改 Windows 用户环境或 Claude Code 配置文件。
+- 进程隔离模式不修改用户环境、shell profile 或 Claude Code 配置文件。
 - 应用不经过模型请求，因此无法记录通过该路径发送的 prompt、代码和回答。
 
 ### 必须附带限制
 
 - “设为 Windows 默认”会把 Key 写入用户级 `ANTHROPIC_AUTH_TOKEN`，这是明文用户环境变量；UI 和文档必须继续明确提示。
-- 同一 Windows 用户权限下的恶意进程仍可能读取目标进程环境或调用系统凭据接口；Credential Manager 不是对本机同权限恶意软件的绝对隔离。
+- 同一系统用户权限下的恶意进程仍可能读取目标进程环境或调用系统凭据接口；系统凭据存储不是对本机同权限恶意软件的绝对隔离。
 - 软件未代码签名时，Windows 可能显示未知发布者或 SmartScreen 提示。
 - VS Code Companion 不得无提示安装桌面程序；首次安装必须明确征得用户确认，并
   保留已有安装自动发现和手动选择程序路径的恢复入口。
@@ -93,15 +93,15 @@ CC Switch 是综合型 AI 工具控制平台。其官方 README 在调研日期�
 
 | 维度 | CC Router | CC Switch |
 | --- | --- | --- |
-| 核心定位 | Windows Claude Code 隔离启动器 | 多工具综合管理平台 |
+| 核心定位 | Windows/Ubuntu Claude Code 隔离启动器 | 多工具综合管理平台 |
 | 路由方式 | 直接注入进程环境 | 配置切换，可选本地代理接管 |
 | 请求路径 | 不经过 CC Router | 代理模式经过本地路由服务 |
 | 协议转换 | 不支持 | 支持多种协议转换 |
 | Provider 并行 | 每个新进程可使用独立 Provider | 主要围绕激活当前 Provider 和热切换 |
-| Key 存储 | Windows Credential Manager | Provider 数据由本地应用数据和 SQLite 管理 |
+| Key 存储 | Credential Manager / Linux Secret Service | Provider 数据由本地应用数据和 SQLite 管理 |
 | 配置修改 | 推荐模式不改全局配置 | 管理各 CLI 的 live 配置或本地路由地址 |
 | 范围 | Claude Code、Anthropic 兼容接口 | 多工具、多协议、大量 Provider |
-| 平台 | Windows | Windows、macOS、Linux |
+| 平台 | Windows、Ubuntu | Windows、macOS、Linux |
 | 学习成本 | 单页、低配置面 | 能力更广，配置面更大 |
 
 CC Switch 的协议转换和综合管理能力明显更强。CC Router 不应宣传为“更强的 CC Switch”或“CC Switch 替代品”。
@@ -122,9 +122,9 @@ CC Switch 的协议转换和综合管理能力明显更强。CC Router 不应宣
 
 对于已经提供 Anthropic 兼容接口的 Provider，不增加本地端口、协议转换、请求日志和代理故障点。它不能替代协议转换，但更容易理解、审计和排错。
 
-### 5.3 Windows 原生凭据边界
+### 5.3 系统原生凭据边界
 
-Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出、UI 状态和手动命令默认不包含真实 Key。
+Key 由 Credential Manager 或 Linux Secret Service 保存并由 Rust 后端按需读取。配置导出、UI 状态和手动命令默认不包含真实 Key。
 
 ### 5.4 修改行为透明且可逆
 
@@ -143,7 +143,7 @@ Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出�
 
 ### 核心用户
 
-- 主要使用 Windows、Claude Code 或 VS Code Claude Code 插件。
+- 主要使用 Windows/Ubuntu、Claude Code 或 VS Code Claude Code 插件。
 - 只管理少量官方 API Key，例如 DeepSeek 和 Kimi。
 - 不需要跨协议代理和完整 AI 工具控制平台。
 - 重视 Key 存放位置、配置修改范围和请求路径透明度。
@@ -153,7 +153,7 @@ Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出�
 
 - 需要把 OpenAI Responses 或 Chat Completions 转换成 Anthropic Messages。
 - 需要多个 AI CLI、MCP、Skills、云同步和用量看板的一站式管理。
-- 需要 macOS/Linux 或企业多用户集中策略。
+- 需要 macOS、其他 Linux 发行版或企业多用户集中策略。
 - 需要自动故障转移和长期常驻网关。
 
 对这些用户应坦率推荐更完整的工具，而不是扩大当前项目承诺。
@@ -162,7 +162,7 @@ Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出�
 
 ### 推荐表达
 
-- 无代理、进程隔离、Windows 原生凭据管理。
+- 无代理、进程隔离、系统原生凭据管理。
 - 同时启动多个不同 Provider 的 Claude Code 会话。
 - 只管理路由，不接触模型请求内容。
 - 系统修改可见、确认后执行、可以回滚。
@@ -199,7 +199,7 @@ Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出�
 
 ### P2：谨慎扩展
 
-- Windows ARM64。
+- Windows ARM64 与 Linux ARM64。
 - Provider 模板签名或可验证更新机制。
 - 多语言 UI。
 - 自动更新和代码签名。
@@ -208,9 +208,9 @@ Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出�
 
 ## 9. 开源发布建议
 
-首个公开版本建议使用 `v0.1.0-beta.1`，不要标为稳定生产版。README 第一屏应直接说明：
+README 第一屏应直接说明：
 
-1. Windows only。
+1. Windows 与 Ubuntu 支持范围。
 2. Claude Code only。
 3. Anthropic-compatible providers only。
 4. 推荐进程隔离模式。
@@ -219,7 +219,7 @@ Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出�
 
 建议的 README 标题副文案：
 
-> A no-proxy, process-isolated Claude Code provider launcher for Windows.
+> A no-proxy, process-isolated Claude Code provider launcher for Windows and Ubuntu.
 
 ## 10. 当前代码入口
 
@@ -227,13 +227,13 @@ Key 由 Credential Manager 保存并由 Rust 后端按需读取。配置导出�
 - `src/defaultProviders.ts`：DeepSeek/Kimi 内置模板。
 - `src/nativeRouter.ts`：Tauri IPC 数据边界。
 - `src/routerCommands.ts`：脱敏手动命令生成。
-- `src-tauri/src/credentials.rs`：Windows Credential Manager。
+- `src-tauri/src/credentials.rs`：Windows Credential Manager / Linux Secret Service。
 - `src-tauri/src/system_env.rs`：用户环境变量读写。
 - `src-tauri/src/commands.rs`：进程启动、系统应用、清除与回滚。
 - `src-tauri/src/backup.rs`：不含明文 Key 的回滚备份。
 - `src-tauri/src/models.rs`：路由校验和 11 个环境变量定义。
 - `src-tauri/src/provider_store.rs`：桌面端与 VS Code Companion 共享的无密钥配置。
-- `src-tauri/src/bin/cc-router-helper.rs`：Credential Manager 支持的 Claude wrapper。
+- `src-tauri/src/bin/cc-router-helper.rs`：系统凭据存储支持的 Claude wrapper。
 - `vscode-extension/src/extension.ts`：VS Code 状态栏、工作区选择与 Claude Code 集成。
 
 接手修改前，至少运行：

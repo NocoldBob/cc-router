@@ -1,10 +1,10 @@
 {
   "extension.displayName": "CC Router 路由助手",
-  "extension.description": "为每个本地 Windows VS Code 工作区选择进程隔离的 Claude Code Provider。",
+  "extension.description": "为每个本地 Windows 或 Ubuntu VS Code 工作区选择进程隔离的 Claude Code Provider。",
   "view.container": "CC Router",
   "view.overview": "工作区路由",
   "view.welcome.setup": "尚未找到共享 Provider 配置。请打开 CC Router 桌面端，配置 API Key 并保存一次，然后刷新此视图。",
-  "view.welcome.workspace": "请先打开一个本地 Windows 文件夹或工作区，再选择 Provider。",
+  "view.welcome.workspace": "请先打开一个本地 Windows 或 Ubuntu 文件夹/工作区，再选择 Provider。",
   "command.selectProvider": "CC Router：为工作区选择 Provider",
   "command.startSession": "CC Router：启动 Claude Code 新会话",
   "command.clearProvider": "CC Router：清除工作区 Provider",
@@ -14,6 +14,6 @@
   "command.refresh": "CC Router：刷新 Provider 状态",
   "command.openDesktop": "CC Router：打开桌面端",
   "command.repairDesktop": "CC Router：修复或更新桌面端",
-  "configuration.helperPath": "可选的 cc-router-helper.exe 路径。留空时使用扩展自带的 helper。",
+  "configuration.helperPath": "可选的 CC Router helper 程序路径。留空时使用扩展自带的对应平台 helper。",
   "configuration.desktopPath": "可选的 CC Router 桌面程序路径。"
 }

@@ -1,13 +1,21 @@
+#[cfg(windows)]
 use std::collections::HashMap;
+#[cfg(windows)]
 use std::process::Command;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
+#[cfg(windows)]
 use serde::Deserialize;
 
-use crate::models::{ProviderRoute, RouteSnapshot, ROUTE_VARIABLES};
+#[cfg(not(windows))]
+use crate::models::ProviderRoute;
+use crate::models::RouteSnapshot;
+#[cfg(windows)]
+use crate::models::{ProviderRoute, ROUTE_VARIABLES};
 
+#[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[derive(Clone, Debug)]
@@ -16,6 +24,32 @@ pub struct FullRouteState {
     pub auth_token: Option<String>,
 }
 
+#[cfg(not(windows))]
+pub fn read_user_route() -> Result<FullRouteState, String> {
+    Err(unsupported())
+}
+
+#[cfg(not(windows))]
+pub fn write_provider_route(_route: &ProviderRoute, _token: String) -> Result<(), String> {
+    Err(unsupported())
+}
+
+#[cfg(not(windows))]
+pub fn clear_user_route() -> Result<(), String> {
+    Err(unsupported())
+}
+
+#[cfg(not(windows))]
+pub fn restore_user_route(_snapshot: &RouteSnapshot, _token: Option<String>) -> Result<(), String> {
+    Err(unsupported())
+}
+
+#[cfg(not(windows))]
+fn unsupported() -> String {
+    "Persistent default routing is only available on Windows.".into()
+}
+
+#[cfg(windows)]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RawRouteState {
@@ -32,6 +66,7 @@ struct RawRouteState {
     max_context_tokens: Option<String>,
 }
 
+#[cfg(windows)]
 pub fn read_user_route() -> Result<FullRouteState, String> {
     let script = r#"
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -86,6 +121,7 @@ pub fn read_user_route() -> Result<FullRouteState, String> {
     })
 }
 
+#[cfg(windows)]
 pub fn write_provider_route(route: &ProviderRoute, token: String) -> Result<(), String> {
     let mut values = ROUTE_VARIABLES
         .iter()
@@ -97,6 +133,7 @@ pub fn write_provider_route(route: &ProviderRoute, token: String) -> Result<(), 
     write_values(values)
 }
 
+#[cfg(windows)]
 pub fn clear_user_route() -> Result<(), String> {
     write_values(
         ROUTE_VARIABLES
@@ -106,6 +143,7 @@ pub fn clear_user_route() -> Result<(), String> {
     )
 }
 
+#[cfg(windows)]
 pub fn restore_user_route(snapshot: &RouteSnapshot, token: Option<String>) -> Result<(), String> {
     let values = HashMap::from([
         (ROUTE_VARIABLES[0].into(), snapshot.base_url.clone()),
@@ -129,6 +167,7 @@ pub fn restore_user_route(snapshot: &RouteSnapshot, token: Option<String>) -> Re
     write_values(values)
 }
 
+#[cfg(windows)]
 fn write_values(values: HashMap<String, Option<String>>) -> Result<(), String> {
     let mut command = powershell();
     command.arg("-Command").arg(write_script());
@@ -154,6 +193,7 @@ fn write_values(values: HashMap<String, Option<String>>) -> Result<(), String> {
     }
 }
 
+#[cfg(windows)]
 fn powershell() -> Command {
     let mut command = Command::new("powershell.exe");
     command.args(["-NoLogo", "-NoProfile", "-NonInteractive"]);
@@ -162,6 +202,7 @@ fn powershell() -> Command {
     command
 }
 
+#[cfg(windows)]
 fn write_script() -> String {
     let mut lines = vec![
         "function Set-CcRouterValue([string]$Name, [string]$Value, [string]$Present) {".into(),
@@ -178,6 +219,7 @@ fn write_script() -> String {
     lines.join("\n")
 }
 
+#[cfg(windows)]
 fn normalize(value: Option<String>) -> Option<String> {
     value.and_then(|value| {
         if value.trim().is_empty() {
@@ -188,7 +230,7 @@ fn normalize(value: Option<String>) -> Option<String> {
     })
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 mod tests {
     use super::*;
 

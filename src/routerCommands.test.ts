@@ -78,4 +78,14 @@ describe('route command generation', () => {
     expect(output).toContain('AuthTokenSet')
     expect(output).not.toContain('AuthToken =')
   })
+
+  it('generates Bash commands without embedding credential values', () => {
+    const output = generateSessionCommands(defaultProviders[1], 'linux')
+
+    expect(output).toContain("export ANTHROPIC_BASE_URL='https://api.moonshot.ai/anthropic'")
+    expect(output).toContain('export ANTHROPIC_AUTH_TOKEN="${KIMI_API_KEY:-}"')
+    expect(output.endsWith('claude')).toBe(true)
+    expect(generateClearCommands('linux')).toContain('unset ANTHROPIC_BASE_URL')
+    expect(generateStatusCommands('linux')).toContain('AuthTokenSet=true')
+  })
 })

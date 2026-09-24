@@ -1,17 +1,17 @@
 # Contributing to CC Router
 
-Thank you for helping improve CC Router. The project is currently a focused
-Windows beta, so changes should preserve its small trust boundary.
+Thank you for helping improve CC Router. The project is focused on Windows and
+Ubuntu, so changes should preserve its small trust boundary.
 
 ## Product Boundaries
 
-- Windows only.
+- Windows 10/11 x64 and Ubuntu Desktop 22.04/24.04 x64 only.
 - Claude Code and Anthropic-compatible Provider routes only.
 - No HTTP proxy, protocol conversion, request logging, telemetry, or cloud sync.
-- Stored API keys stay in Windows Credential Manager and are never returned to
+- Stored API keys stay in the system credential store and are never returned to
   the frontend, logs, exports, Provider JSON, or `localStorage`.
-- Process-scoped launch is the recommended mode and does not modify Windows
-  user environment variables or Claude configuration files.
+- Process-scoped launch is the recommended mode and does not modify user
+  environment variables, shell profiles, or Claude configuration files.
 
 Read `README.md`, `AGENTS.md`, and
 `docs/PRODUCT_STRATEGY_AND_HANDOFF.md` before making behavioral changes.
@@ -20,10 +20,11 @@ Read `README.md`, `AGENTS.md`, and
 
 Requirements:
 
-- Windows 10 or 11 with WebView2.
+- Windows 10/11 with WebView2, or Ubuntu Desktop 22.04/24.04.
 - Node.js 20 or newer and pnpm 10.
-- Rust stable with the `x86_64-pc-windows-msvc` target.
-- Visual Studio Build Tools with Desktop development with C++.
+- Rust stable with the native x64 target.
+- Windows: Visual Studio Build Tools with Desktop development with C++.
+- Ubuntu: Tauri WebKitGTK, AppIndicator, Rsvg, DBus, and `patchelf` build dependencies.
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -43,7 +44,7 @@ cargo test
 cargo check
 ```
 
-Changes involving credentials, IPC payloads, environment handling, PowerShell
+Changes involving credentials, IPC payloads, environment handling, generated shell
 generation, executable launch, import/export, or backup compatibility require
 focused regression tests.
 
@@ -52,7 +53,7 @@ focused regression tests.
 - Use fake API keys only.
 - Do not commit `.env` files, Provider exports containing secrets, route backup
   files, private paths, private project content, or diagnostic logs.
-- Automated tests must not modify the maintainer's Windows user environment.
+- Automated tests must not modify the maintainer's user environment or shell profiles.
 - Test persistent routing manually only on an expendable test account and
   restore the previous route afterward.
 

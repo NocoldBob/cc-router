@@ -3,10 +3,25 @@
 All notable user-visible changes will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project uses semantic versioning with prerelease identifiers during
-the public beta.
+and this project uses semantic versioning.
 
 ## [Unreleased]
+
+## [0.3.0] - 2026-09-24
+
+### Added
+
+- Native Ubuntu Desktop 22.04/24.04 x64 support with process-isolated Claude Code launch.
+- Linux Secret Service credential storage and XDG-compliant shared Provider configuration.
+- Ubuntu DEB and AppImage packages, plus a platform-specific Linux VS Code Companion package.
+- Dual-platform CI and stable GitHub release packaging for Windows and Ubuntu.
+
+### Changed
+
+- VS Code Companion reaches `1.0.0` and bundles the matching desktop manager and native helper
+  separately for Windows x64 and Linux x64.
+- Persistent default routing remains Windows-only. Ubuntu never edits `.bashrc`, `.profile`, or
+  other shell configuration.
 
 ## [0.2.0-beta.3] - 2026-09-24
 
@@ -66,7 +81,8 @@ the public beta.
 - Open-source repository policy, security, contribution, and release files.
 - Clean Windows runner smoke tests for NSIS installation, app startup, and uninstall.
 
-[Unreleased]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.3...HEAD
+[Unreleased]: https://github.com/NocoldBob/cc-router/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.3...v0.3.0
 [0.2.0-beta.3]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.2...v0.2.0-beta.3
 [0.2.0-beta.2]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.1...v0.2.0-beta.2
 [0.2.0-beta.1]: https://github.com/NocoldBob/cc-router/compare/v0.1.0-beta.1...v0.2.0-beta.1
