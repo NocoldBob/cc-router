@@ -103,7 +103,7 @@ jobs:
             "$hash  $($_.Name)" | Set-Content "$($_.FullName).sha256" -Encoding ascii
           }
       - name: Upload Windows packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-release
           path: release-assets/*
@@ -166,7 +166,7 @@ jobs:
           done
           sha256sum -- * > SHA256SUMS-linux.txt
       - name: Upload Ubuntu packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ubuntu-release
           path: release-assets/*
