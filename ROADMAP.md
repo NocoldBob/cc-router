@@ -14,9 +14,9 @@ features.
 
 ## Focus Areas
 
-- Redacted diagnostic export suitable for issue reports.
+- [x] Redacted diagnostic export suitable for issue reports.
 - [x] Optional endpoint and model availability checks that send no project data.
-- Launching an isolated terminal or VS Code workspace with a selected Provider.
+- [x] Launching an isolated terminal or VS Code workspace with a selected Provider.
 - [x] Marketplace publishing and compatibility checks for the VS Code Companion.
 - [x] Native Ubuntu process-isolated routing and VS Code Companion compatibility.
 - Windows ARM64 evaluation.

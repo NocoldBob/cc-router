@@ -64,6 +64,44 @@ export interface NativeActionResult {
   processId?: number
 }
 
+export type SessionTarget = 'claude' | 'terminal' | 'vsCode'
+export type SessionStatus = 'running' | 'exited'
+
+export interface SessionInfo {
+  id: number
+  pid: number
+  providerId: string
+  providerName: string
+  target: SessionTarget
+  workingDirectory?: string
+  startedAtUnix: number
+  status: SessionStatus
+}
+
+export interface ProviderDiagnostics {
+  id: string
+  displayName: string
+  baseUrl: string
+  mainModel: string
+  enabled: boolean
+  credentialConfigured: boolean
+}
+
+export interface DiagnosticsReport {
+  generatedAtUnix: number
+  appVersion: string
+  platform: string
+  credentialStore: string
+  persistentRouteSupported: boolean
+  cliAvailable: boolean
+  cliPathRedacted?: string
+  inheritedVariableNames: string[]
+  userRouteVariableNames: string[]
+  userRouteAuthTokenSet: boolean
+  providers: ProviderDiagnostics[]
+  providerCatalogError?: string
+}
+
 export const nativeRuntimeAvailable = isTauri()
 
 export function toNativeRoute(provider: Provider): NativeProviderRoute {
@@ -133,6 +171,32 @@ export async function launchClaude(
     cliPath: cliPath || null,
     workingDirectory: workingDirectory || null,
   })
+}
+
+export async function launchTerminal(provider: Provider, workingDirectory?: string) {
+  return invoke<NativeActionResult>('launch_terminal', {
+    route: toNativeRoute(provider),
+    workingDirectory: workingDirectory || null,
+  })
+}
+
+export async function launchVsCode(provider: Provider, workingDirectory: string) {
+  return invoke<NativeActionResult>('launch_vscode', {
+    route: toNativeRoute(provider),
+    workingDirectory,
+  })
+}
+
+export async function listSessions() {
+  return invoke<SessionInfo[]>('list_sessions')
+}
+
+export async function killSession(sessionId: number) {
+  return invoke<SessionInfo>('kill_session', { sessionId })
+}
+
+export async function getDiagnostics(cliPath?: string) {
+  return invoke<DiagnosticsReport>('export_diagnostics', { cliPath: cliPath || null })
 }
 
 export async function applyUserRoute(provider: Provider) {

@@ -902,6 +902,58 @@
 .conflict-status.detected > svg { color: #d7a25f; }
 .conflict-status small { display: block; margin-top: 2px; color: #737d74; font-size: 8px; }
 
+.session-panel {
+  margin-top: 14px;
+  border-top: 1px solid #414741;
+}
+
+.session-empty {
+  margin: 4px 0 0;
+  padding: 7px 0;
+  color: #737d74;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.session-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #3b413b;
+}
+
+.session-list > li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 2px;
+  border-bottom: 1px solid #3b413b;
+}
+
+.session-list > li.exited .session-copy { opacity: 0.55; }
+
+.session-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.session-copy strong { color: #bfc6bf; font-size: 9px; }
+.session-copy small {
+  color: #7f8980;
+  font-size: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-list .icon-button {
+  width: 24px;
+  height: 24px;
+}
+
 .native-launch {
   width: 100%;
   margin-top: 12px;

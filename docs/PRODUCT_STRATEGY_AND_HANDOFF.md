@@ -24,6 +24,13 @@ CC Router 是一个面向 Windows 与 Ubuntu 的 Claude Code 路由启动器：�
 - 管理 DeepSeek、Kimi Global、Kimi Code K3/K2.7 Code 和自定义 Anthropic 兼容 Provider。
 - API Key 保存到 Windows Credential Manager 或 Linux Secret Service，前端只获取“是否已配置”。
 - 向新启动的 Claude Code 子进程注入路由，不修改全局环境。
+- 从桌面端直接打开注入所选路由的隔离终端窗口，或在 VS Code 中打开工作目录：
+  工作区绑定写入共享无密钥配置供 VS Code Companion 路由，新启动的 VS Code 窗口
+  同时继承隔离路由环境。
+- 会话面板列出本次应用运行期间由 CC Router 启动的会话（Provider、目标类型、
+  工作目录、运行状态），可停止启动进程；不读取会话内容，不跟踪其他工具启动的进程。
+- 可导出脱敏诊断报告（应用版本、平台、凭据存储、CLI 检测、仅变量名的环境冲突、
+  隐藏用户目录前缀的路径、各 Provider 是否已配置凭据），不读取 API Key。
 - 可选地写入 Windows 用户环境，供新终端和重启后的 VS Code Claude Code 插件读取。
 - 提供 Windows 与 Ubuntu VS Code Companion，为每个本地工作区选择 Provider，并通过
   Claude Code 的受支持进程 wrapper 启动隔离的新会话。
@@ -48,7 +55,6 @@ CC Router 是一个面向 Windows 与 Ubuntu 的 Claude Code 路由启动器：�
 - 用量、费用和请求日志统计。
 - MCP、Skills、Prompt 和会话管理。
 - 云同步、系统托盘、自动更新和商业代码签名。
-- 从 UI 直接启动隔离环境下的 VS Code 工作区。
 
 维护者不得把“未实现”功能写进现有功能列表。
 
@@ -190,10 +196,10 @@ Key 由 Credential Manager 或 Linux Secret Service 保存并由 Rust 后端按�
 
 ### P1：强化独有价值
 
-- 一键使用指定 Provider 打开 VS Code 工作区。
-- 显示由 CC Router 启动的隔离会话及其 Provider，但不读取会话内容。
-- 增加 endpoint、鉴权和模型可用性测试，测试请求不得包含项目内容。
-- 增加环境冲突诊断和脱敏诊断报告。
+- 一键使用指定 Provider 打开 VS Code 工作区。（已实现，0.4.0）
+- 显示由 CC Router 启动的隔离会话及其 Provider，但不读取会话内容。（已实现，0.4.0）
+- 增加 endpoint、鉴权和模型可用性测试，测试请求不得包含项目内容。（已实现，0.2.0-beta.3）
+- 增加环境冲突诊断和脱敏诊断报告。（已实现，0.4.0）
 - 增加系统托盘中的“用 Provider 打开终端/项目”。
 - 增加仅允许官方 HTTPS endpoint 的可选安全模式。
 
@@ -233,6 +239,8 @@ README 第一屏应直接说明：
 - `src-tauri/src/backup.rs`：不含明文 Key 的回滚备份。
 - `src-tauri/src/models.rs`：路由校验和 11 个环境变量定义。
 - `src-tauri/src/provider_store.rs`：桌面端与 VS Code Companion 共享的无密钥配置。
+- `src-tauri/src/sessions.rs`：本应用启动会话的内存注册表（不含环境值和会话内容）。
+- `src-tauri/src/diagnostics.rs`：脱敏诊断报告（仅变量名、布尔凭据标志、隐藏用户目录的路径）。
 - `src-tauri/src/bin/cc-router-helper.rs`：系统凭据存储支持的 Claude wrapper。
 - `vscode-extension/src/extension.ts`：VS Code 状态栏、工作区选择与 Claude Code 集成。
 

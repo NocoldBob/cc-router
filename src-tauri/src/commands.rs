@@ -3,19 +3,22 @@ use std::env;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
-use tauri::AppHandle;
+use tauri::{AppHandle, State};
 
 use crate::backup;
 use crate::credentials;
+use crate::diagnostics::{self, DiagnosticsReport};
 use crate::models::{
     ActionResult, CredentialStatus, LaunchReadiness, ProviderConfig, ProviderRoute, RuntimeInfo,
     UserRouteStatus, ROUTE_VARIABLES,
 };
 use crate::provider_store;
+use crate::sessions::{SessionInfo, SessionRegistry, SessionTarget};
 use crate::system_env;
 
 #[cfg(windows)]
@@ -136,6 +139,7 @@ pub fn get_user_route_status(
 
 #[tauri::command]
 pub fn launch_claude(
+    sessions: State<'_, Mutex<SessionRegistry>>,
     route: ProviderRoute,
     cli_path: Option<String>,
     working_directory: Option<String>,
@@ -149,15 +153,163 @@ pub fn launch_claude(
     let environment = route.environment(token);
 
     let child = launch_isolated_process(&executable, working_directory.as_deref(), environment)?;
+    let message = format!(
+        "Claude Code launched with the {} route.",
+        route.display_name
+    );
+    record_session(
+        &sessions,
+        child,
+        &route,
+        SessionTarget::Claude,
+        working_directory,
+    );
 
     Ok(ActionResult {
-        message: format!(
-            "Claude Code launched with the {} route.",
-            route.display_name
-        ),
+        message,
         changed_variables: Vec::new(),
-        process_id: Some(child.id()),
+        process_id: None,
     })
+}
+
+/// Opens a plain terminal window whose process environment already carries
+/// the selected route, so any `claude` invocation inside it is isolated
+/// without touching the user environment.
+#[tauri::command]
+pub fn launch_terminal(
+    sessions: State<'_, Mutex<SessionRegistry>>,
+    route: ProviderRoute,
+    working_directory: Option<String>,
+) -> Result<ActionResult, String> {
+    route.validate()?;
+    let token = credentials::read_provider_token(&route.id)?;
+    let working_directory = validate_working_directory(working_directory)?;
+    let environment = route.environment(token);
+
+    let child = launch_isolated_terminal(working_directory.as_deref(), environment)?;
+    let message = format!(
+        "An isolated terminal opened with the {} route.",
+        route.display_name
+    );
+    record_session(
+        &sessions,
+        child,
+        &route,
+        SessionTarget::Terminal,
+        working_directory,
+    );
+
+    Ok(ActionResult {
+        message,
+        changed_variables: Vec::new(),
+        process_id: None,
+    })
+}
+
+/// Opens a VS Code window on the selected working directory. The workspace is
+/// recorded in the shared secret-free catalog so the VS Code Companion routes
+/// every Claude Code session in it through the chosen Provider; the window
+/// process itself also inherits the isolated route environment for fresh VS
+/// Code launches.
+#[tauri::command]
+pub fn launch_vscode(
+    sessions: State<'_, Mutex<SessionRegistry>>,
+    route: ProviderRoute,
+    working_directory: Option<String>,
+) -> Result<ActionResult, String> {
+    route.validate()?;
+    let working_directory = validate_working_directory(working_directory)?
+        .ok_or_else(|| "Choose a working directory to open in VS Code first.".to_string())?;
+    let token = credentials::read_provider_token(&route.id)?;
+    provider_store::select_provider_for_workspace(&working_directory, &route.id)
+        .map_err(|error| format!("Could not bind the workspace route: {error}"))?;
+    let executable = resolve_vscode_cli().ok_or_else(|| {
+        "The VS Code CLI (code) was not found. Install VS Code or add code to PATH.".to_string()
+    })?;
+    let environment = route.environment(token);
+
+    let mut command = Command::new(executable);
+    command
+        .arg("--new-window")
+        .arg(&working_directory)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    configure_isolated_environment(&mut command, environment, Some(&working_directory));
+    let child = command
+        .spawn()
+        .map_err(|error| format!("Could not launch VS Code: {error}"))?;
+    let message = format!(
+        "VS Code opened with the {} route for this workspace.",
+        route.display_name
+    );
+    record_session(
+        &sessions,
+        child,
+        &route,
+        SessionTarget::VsCode,
+        Some(working_directory),
+    );
+
+    Ok(ActionResult {
+        message,
+        changed_variables: Vec::new(),
+        process_id: None,
+    })
+}
+
+/// Lists sessions this CC Router instance launched, with live status. No
+/// session content, environment value, or token is ever included.
+#[tauri::command]
+pub fn list_sessions(sessions: State<'_, Mutex<SessionRegistry>>) -> Vec<SessionInfo> {
+    sessions
+        .lock()
+        .map(|mut registry| registry.list())
+        .unwrap_or_default()
+}
+
+#[tauri::command]
+pub fn kill_session(
+    sessions: State<'_, Mutex<SessionRegistry>>,
+    session_id: u64,
+) -> Result<SessionInfo, String> {
+    sessions
+        .lock()
+        .map_err(|_| "The session registry is unavailable.".to_string())?
+        .kill(session_id)
+}
+
+/// Builds a redacted diagnostics report for issue reports. Only environment
+/// variable names, boolean credential flags, and home-redacted paths leave
+/// the process.
+#[tauri::command]
+pub fn export_diagnostics(cli_path: Option<String>) -> DiagnosticsReport {
+    let resolved_cli = resolve_claude_cli(cli_path.as_deref());
+    diagnostics::collect_diagnostics(
+        platform_name(),
+        resolved_cli.is_some(),
+        resolved_cli.map(|path| path.to_string_lossy().into_owned()),
+        cfg!(windows),
+        detect_conflicting_variables(|name| env::var_os(name)),
+    )
+}
+
+fn record_session(
+    sessions: &State<'_, Mutex<SessionRegistry>>,
+    child: Child,
+    route: &ProviderRoute,
+    target: SessionTarget,
+    working_directory: Option<PathBuf>,
+) {
+    if let Ok(mut registry) = sessions.lock() {
+        registry.record(
+            child,
+            &route.id,
+            &route.display_name,
+            target,
+            working_directory.map(|directory| directory.to_string_lossy().into_owned()),
+        );
+    }
 }
 
 #[tauri::command]
@@ -348,6 +500,89 @@ fn resolve_linux_terminal() -> Option<(PathBuf, &'static [&'static str])> {
     ]
     .into_iter()
     .find_map(|(name, arguments)| find_in_path(name).map(|path| (path, arguments)))
+}
+
+#[cfg(windows)]
+fn launch_isolated_terminal(
+    working_directory: Option<&Path>,
+    environment: Vec<(String, String)>,
+) -> Result<Child, String> {
+    let mut command = Command::new("cmd.exe");
+    command
+        .args(["/K"])
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .creation_flags(CREATE_NEW_CONSOLE);
+    configure_isolated_environment(&mut command, environment, working_directory);
+    command
+        .spawn()
+        .map_err(|error| format!("Could not open an isolated terminal: {error}"))
+}
+
+#[cfg(target_os = "linux")]
+fn launch_isolated_terminal(
+    working_directory: Option<&Path>,
+    environment: Vec<(String, String)>,
+) -> Result<Child, String> {
+    let (terminal, arguments) = resolve_linux_terminal().ok_or_else(|| {
+        "No supported terminal emulator was found. Install GNOME Terminal, Konsole, Kitty, or Alacritty.".to_string()
+    })?;
+    let shell = env::var_os("SHELL")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("/bin/bash"));
+    let mut command = Command::new(terminal);
+    command
+        .args(arguments)
+        .arg(shell)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    configure_isolated_environment(&mut command, environment, working_directory);
+    command
+        .spawn()
+        .map_err(|error| format!("Could not open an isolated terminal: {error}"))
+}
+
+fn resolve_vscode_cli() -> Option<PathBuf> {
+    #[cfg(windows)]
+    if let Ok(output) = Command::new("where.exe").arg("code").output() {
+        if output.status.success() {
+            if let Some(path) = String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .map(str::trim)
+                .map(PathBuf::from)
+                .find(|path| path.is_file())
+            {
+                return Some(path);
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    if let Some(path) = find_in_path("code") {
+        return Some(path);
+    }
+
+    let mut candidates = Vec::new();
+    #[cfg(windows)]
+    {
+        if let Some(local_app_data) = env::var_os("LOCALAPPDATA") {
+            candidates.push(
+                PathBuf::from(&local_app_data).join("Programs\\Microsoft VS Code\\bin\\code.cmd"),
+            );
+        }
+        if let Some(program_files) = env::var_os("ProgramFiles") {
+            candidates.push(PathBuf::from(&program_files).join("Microsoft VS Code\\bin\\code.cmd"));
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        candidates.push(PathBuf::from("/usr/bin/code"));
+        candidates.push(PathBuf::from("/snap/bin/code"));
+    }
+    candidates.into_iter().find(|path| path.is_file())
 }
 
 #[cfg(target_os = "linux")]

@@ -3,12 +3,15 @@ import {
   Check,
   ChevronDown,
   CirclePlus,
+  CircleStop,
   Clipboard,
+  CodeXml,
   Copy,
   Download,
   ExternalLink,
   Eye,
   EyeOff,
+  FileDown,
   FolderOpen,
   KeyRound,
   Laptop,
@@ -42,16 +45,23 @@ import {
   clearUserRoute,
   deleteCredential,
   getCredentialStatus,
+  getDiagnostics,
   getLaunchReadiness,
   getRuntimeInfo,
   getUserRouteStatus,
+  killSession,
   launchClaude,
+  launchTerminal,
+  launchVsCode,
+  listSessions,
   nativeRuntimeAvailable,
   rollbackUserRoute,
   saveCredential,
   syncProviderCatalog,
   type RuntimeInfo,
   type LaunchReadiness,
+  type SessionInfo,
+  type SessionTarget,
   type UserRouteStatus,
 } from './nativeRouter'
 import { providerIsValid } from './providerValidation'
@@ -130,6 +140,12 @@ const accentOptions: Array<{ value: ProviderAccent; label: string }> = [
   { value: 'violet', label: '紫色' },
 ]
 
+const sessionTargetLabels: Record<SessionTarget, string> = {
+  claude: 'Claude 会话',
+  terminal: '隔离终端',
+  vsCode: 'VS Code 工作区',
+}
+
 type ConfirmAction = 'apply' | 'clear' | null
 
 function App() {
@@ -158,6 +174,7 @@ function App() {
   const [busy, setBusy] = useState('')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [refreshCounter, setRefreshCounter] = useState(0)
+  const [sessions, setSessions] = useState<SessionInfo[]>([])
   const importRef = useRef<HTMLInputElement>(null)
 
   const selected = providers.find((provider) => provider.id === selectedId) ?? providers[0]
@@ -184,6 +201,7 @@ function App() {
       selected?.enabled &&
       launchReady,
   )
+  const canOpenVsCode = Boolean(canLaunch && workingDirectory.trim())
 
   const flash = (message: string) => {
     setToast(message)
@@ -238,6 +256,18 @@ function App() {
 
     return () => window.clearTimeout(timeout)
   }, [selected, cliPath, workingDirectory, refreshCounter])
+
+  useEffect(() => {
+    if (!nativeRuntimeAvailable) return
+    const updateSessions = () => {
+      void listSessions()
+        .then(setSessions)
+        .catch(() => setSessions([]))
+    }
+    updateSessions()
+    const timer = window.setInterval(updateSessions, 5000)
+    return () => window.clearInterval(timer)
+  }, [refreshCounter])
 
   const refreshNativeState = () => setRefreshCounter((value) => value + 1)
 
@@ -334,6 +364,70 @@ function App() {
     try {
       const result = await launchClaude(selected, cliPath, workingDirectory)
       flash(result.message)
+      refreshNativeState()
+    } catch (error) {
+      flash(errorMessage(error))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const openTerminal = async () => {
+    if (!selected || !canLaunch) return
+    setBusy('terminal')
+    try {
+      const result = await launchTerminal(selected, workingDirectory)
+      flash(result.message)
+      refreshNativeState()
+    } catch (error) {
+      flash(errorMessage(error))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const openVsCode = async () => {
+    if (!selected || !canOpenVsCode) return
+    setBusy('vscode')
+    try {
+      const result = await launchVsCode(selected, workingDirectory.trim())
+      flash(result.message)
+      refreshNativeState()
+    } catch (error) {
+      flash(errorMessage(error))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const stopSession = async (sessionId: number) => {
+    setBusy(`session-${sessionId}`)
+    try {
+      await killSession(sessionId)
+      flash('已结束该会话的启动进程')
+      refreshNativeState()
+    } catch (error) {
+      flash(errorMessage(error))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const exportDiagnosticsReport = async () => {
+    if (!nativeRuntimeAvailable) return
+    setBusy('diagnostics')
+    try {
+      const report = await getDiagnostics(cliPath)
+      const blob = new Blob([JSON.stringify(report, null, 2)], {
+        type: 'application/json',
+      })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'cc-router-diagnostics.json'
+      anchor.click()
+      URL.revokeObjectURL(url)
+      flash('诊断报告已导出，仅含变量名与脱敏路径，不含 API Key')
     } catch (error) {
       flash(errorMessage(error))
     } finally {
@@ -495,6 +589,7 @@ function App() {
           <input ref={importRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={(event) => void importProviders(event.target.files?.[0])} />
           <button onClick={() => importRef.current?.click()}><Upload size={15} /> 导入配置</button>
           <button onClick={exportProviders}><Download size={15} /> 导出配置</button>
+          <button disabled={!nativeRuntimeAvailable || busy === 'diagnostics'} title="导出脱敏诊断报告，仅含变量名与脱敏路径" onClick={() => void exportDiagnosticsReport()}><FileDown size={15} /> 导出诊断</button>
           <button onClick={resetDefaults}><RotateCcw size={15} /> 恢复模板</button>
         </div>
 
@@ -770,6 +865,62 @@ function App() {
             <button className="button launch native-launch" disabled={!canLaunch || Boolean(busy)} onClick={() => void startClaude()}>
               <Play size={17} /> {busy === 'launch' ? '正在启动…' : `切换并启动 ${selected.displayName}`}
             </button>
+            <div className="system-actions">
+              <button
+                className="button outline"
+                disabled={!canLaunch || Boolean(busy)}
+                title="打开一个已注入当前路由的终端窗口，不修改用户环境"
+                onClick={() => void openTerminal()}
+              >
+                <Terminal size={15} /> {busy === 'terminal' ? '正在打开…' : '隔离终端'}
+              </button>
+              <button
+                className="button outline"
+                disabled={!canOpenVsCode || Boolean(busy)}
+                title={workingDirectory.trim() ? '在 VS Code 中打开工作目录，并通过 Companion 绑定当前 Provider' : '先填写有效的工作目录'}
+                onClick={() => void openVsCode()}
+              >
+                <CodeXml size={15} /> {busy === 'vscode' ? '正在打开…' : '在 VS Code 中打开'}
+              </button>
+            </div>
+
+            {nativeRuntimeAvailable && (
+              <section className="session-panel" aria-label="隔离会话">
+                <div className="readiness-heading">
+                  <span>隔离会话</span>
+                  <strong>{sessions.length ? `${sessions.filter((session) => session.status === 'running').length} 个运行中` : '无'}</strong>
+                </div>
+                {sessions.length === 0 ? (
+                  <p className="session-empty">本次运行尚未从 CC Router 启动会话。仅列出由本应用启动的进程，不读取会话内容。</p>
+                ) : (
+                  <ul className="session-list">
+                    {sessions.map((session) => (
+                      <li key={session.id} className={session.status === 'running' ? '' : 'exited'}>
+                        <span className={`status-dot ${session.status === 'running' ? 'on' : ''}`} />
+                        <span className="session-copy">
+                          <strong>{session.providerName} · {sessionTargetLabels[session.target]}</strong>
+                          <small>
+                            {new Date(session.startedAtUnix * 1000).toLocaleTimeString()}
+                            {session.workingDirectory ? ` · ${session.workingDirectory}` : ''}
+                            {session.status === 'exited' ? ' · 已退出或已分离' : ''}
+                          </small>
+                        </span>
+                        {session.status === 'running' && (
+                          <button
+                            className="icon-button"
+                            title="结束该会话的启动进程"
+                            disabled={busy === `session-${session.id}`}
+                            onClick={() => void stopSession(session.id)}
+                          >
+                            <CircleStop size={15} />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
             {runtime.persistentRouteSupported && (
               <div className="system-actions">
                 <button className="button outline" disabled={!nativeRuntimeAvailable || !credentialConfigured || !isValid || isDirty || Boolean(busy)} onClick={() => setConfirmAction('apply')}>

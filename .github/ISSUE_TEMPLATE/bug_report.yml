@@ -54,7 +54,7 @@ body:
     id: diagnostics
     attributes:
       label: Redacted diagnostics
-      description: Include only the minimum output needed. Remove tokens, usernames, and private paths.
+      description: From CC Router 0.4.0, use the sidebar "导出诊断" button and attach the generated cc-router-diagnostics.json. On older versions include only the minimum output needed. Never add tokens, usernames beyond the redacted paths, or project content.
       render: text
   - type: checkboxes
     id: checks

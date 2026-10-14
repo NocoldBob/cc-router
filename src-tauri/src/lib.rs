@@ -1,14 +1,17 @@
 mod backup;
 mod commands;
 pub mod credentials;
+mod diagnostics;
 pub mod models;
 pub mod probe;
 pub mod provider_store;
+mod sessions;
 mod system_env;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(std::sync::Mutex::new(sessions::SessionRegistry::default()))
         .invoke_handler(tauri::generate_handler![
             commands::runtime_info,
             commands::get_launch_readiness,
@@ -18,6 +21,11 @@ pub fn run() {
             commands::sync_provider_catalog,
             commands::get_user_route_status,
             commands::launch_claude,
+            commands::launch_terminal,
+            commands::launch_vscode,
+            commands::list_sessions,
+            commands::kill_session,
+            commands::export_diagnostics,
             commands::apply_user_route,
             commands::clear_user_route,
             commands::rollback_user_route,

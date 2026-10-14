@@ -1,7 +1,7 @@
 {
   "name": "cc-router",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "No-proxy, process-isolated Claude Code Provider launcher for Windows and Ubuntu",
   "license": "MIT",
   "packageManager": "pnpm@10.33.0",

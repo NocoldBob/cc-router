@@ -7,6 +7,22 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-14
+
+### Added
+
+- Launch a Provider-isolated terminal from the desktop app: the new window already carries
+  the selected route environment, without touching user environment variables or shell profiles.
+- Open a working directory in VS Code with a selected Provider: the workspace is bound in the
+  shared secret-free catalog so the VS Code Companion routes its Claude Code sessions, and a
+  freshly started VS Code window also inherits the isolated route environment.
+- Session panel listing every session launched by the running CC Router instance with its
+  Provider, target, working directory, and live status, plus an option to stop the launcher
+  process. Sessions started by earlier runs or by other tools are never inspected.
+- Redacted diagnostics export (`cc-router-diagnostics.json`) for issue reports: application
+  version, platform, credential store, CLI detection, environment variable names (never
+  values), home-redacted paths, and per-Provider credential flags. API keys are never read.
+
 ## [0.3.0] - 2026-09-24
 
 ### Added
@@ -81,7 +97,8 @@ and this project uses semantic versioning.
 - Open-source repository policy, security, contribution, and release files.
 - Clean Windows runner smoke tests for NSIS installation, app startup, and uninstall.
 
-[Unreleased]: https://github.com/NocoldBob/cc-router/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/NocoldBob/cc-router/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/NocoldBob/cc-router/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.3...v0.3.0
 [0.2.0-beta.3]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.2...v0.2.0-beta.3
 [0.2.0-beta.2]: https://github.com/NocoldBob/cc-router/compare/v0.2.0-beta.1...v0.2.0-beta.2
