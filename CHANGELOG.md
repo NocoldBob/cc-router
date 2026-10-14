@@ -23,6 +23,14 @@ and this project uses semantic versioning.
   version, platform, credential store, CLI detection, environment variable names (never
   values), home-redacted paths, and per-Provider credential flags. API keys are never read.
 
+### Security
+
+- Updated development-time dependencies to patched versions: `source-map-js` 1.2.2,
+  `brace-expansion` 5.0.12, `markdown-it` 14.3.2, and `undici` 7.30.0. These packages only
+  appear in build tooling (Vite, `@vscode/vsce`) and are not shipped in the application.
+  `braces` 3.0.3 remains the latest published release with an unfixed stack-exhaustion
+  advisory; it is only reachable through the VS Code extension packaging tool.
+
 ## [0.3.0] - 2026-09-24
 
 ### Added
