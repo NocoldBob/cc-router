@@ -23,6 +23,11 @@ and this project uses semantic versioning.
   version, platform, credential store, CLI detection, environment variable names (never
   values), home-redacted paths, and per-Provider credential flags. API keys are never read.
 
+### Changed
+
+- VS Code Companion reaches `1.1.0`; its code is unchanged from `1.0.0`, but the bundled
+  desktop installer now matches desktop `0.4.0` (`1.0.0` bundled desktop `0.3.0`).
+
 ### Security
 
 - Updated development-time dependencies to patched versions: `source-map-js` 1.2.2,

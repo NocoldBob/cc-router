@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.1.0
+
+- Bundled CC Router desktop `0.4.0` with Provider-isolated terminal launch, "open this
+  workspace in VS Code" desktop entry point, an app-launched session panel, and redacted
+  diagnostics export.
+- Extension code is unchanged from `1.0.0`; the version bump keeps the bundled desktop
+  payload traceable (the `1.0.0` bundle shipped desktop `0.3.0`).
+
 ## 1.0.0
 
 - Added native Ubuntu 22.04/24.04 x64 support using Linux Secret Service.
