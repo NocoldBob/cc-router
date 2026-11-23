@@ -64,7 +64,7 @@
     "viewsWelcome": [
       {
         "view": "ccRouter.overview",
-        "contents": "尚未找到共享 Provider 配置。\nNo shared Provider configuration was found.\n[安装或启动桌面端 / Install or open desktop](command:ccRouter.openDesktop)\n[修复或更新桌面端 / Repair or update desktop](command:ccRouter.repairDesktop)\n[已保存配置，刷新 / Saved, refresh now](command:ccRouter.refresh)",
+        "contents": "尚未找到 Provider 配置。\nNo Provider configuration was found.\n[打开 Provider 管理 / Open Provider Manager](command:ccRouter.manageProviders)\n[已保存配置，刷新 / Saved, refresh now](command:ccRouter.refresh)",
         "when": "ccRouter.needsSetup"
       },
       {
@@ -120,6 +120,11 @@
         "command": "ccRouter.storeCredential",
         "title": "%command.storeCredential%",
         "icon": "$(key)"
+      },
+      {
+        "command": "ccRouter.manageProviders",
+        "title": "%command.manageProviders%",
+        "icon": "$(settings-gear)"
       }
     ],
     "menus": {
@@ -130,7 +135,7 @@
           "group": "navigation@1"
         },
         {
-          "command": "ccRouter.openDesktop",
+          "command": "ccRouter.manageProviders",
           "when": "view == ccRouter.overview",
           "group": "navigation@2"
         }
@@ -172,9 +177,10 @@
     "check": "pnpm sync:shared && tsc --noEmit -p tsconfig.json && oxlint src",
     "compile": "pnpm sync:shared && tsc -p tsconfig.json",
     "build:helper": "cargo build --manifest-path ../src-tauri/Cargo.toml --release --bin cc-router-helper",
+    "build:webview": "node scripts/build-webview.mjs",
     "build:desktop": "pnpm --dir .. desktop:build",
     "copy:binaries": "node scripts/copy-binaries.mjs",
-    "prepare:package": "pnpm build:desktop && pnpm build:helper && pnpm copy:binaries && pnpm compile",
+    "prepare:package": "pnpm build:desktop && pnpm build:helper && pnpm build:webview && pnpm copy:binaries && pnpm compile",
     "package:vsix": "pnpm prepare:package && node scripts/package-vsix.mjs"
   },
   "devDependencies": {

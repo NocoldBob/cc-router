@@ -20,6 +20,7 @@ import {
   type ProviderSummary,
 } from './helperClient'
 import { text } from './localization'
+import { ManagePanel } from './managePanel'
 import { ProviderStore } from './providerStore'
 import { probeLabel, RouterTreeProvider } from './routerTree'
 
@@ -81,6 +82,8 @@ export function activate(context: vscode.ExtensionContext): void {
       refreshWithFeedback(context, refresh)),
     vscode.commands.registerCommand('ccRouter.storeCredential', () =>
       saveApiKey(context, refresh)),
+    vscode.commands.registerCommand('ccRouter.manageProviders', () =>
+      ManagePanel.show(context, providerStore(context), refresh)),
     vscode.commands.registerCommand('ccRouter.openDesktop', () => openDesktop(context)),
     vscode.commands.registerCommand('ccRouter.repairDesktop', () =>
       repairDesktop(context, refresh)),

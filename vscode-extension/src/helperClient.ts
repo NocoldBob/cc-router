@@ -124,6 +124,31 @@ export async function deleteCredential(
   await runHelper(context, ['delete-credential', providerId])
 }
 
+/** Whether an API key exists in the OS credential store (boolean only). */
+export async function credentialStatus(
+  context: vscode.ExtensionContext,
+  providerId: string,
+): Promise<{ providerId: string; configured: boolean }> {
+  const output = await runHelper(context, ['credential-status', providerId])
+  return JSON.parse(output) as { providerId: string; configured: boolean }
+}
+
+/** Windows user route status; mirrors the desktop UserRouteStatus shape. */
+export interface RouteStatus {
+  baseUrl?: string
+  matchesSelected: boolean
+  backupAvailable: boolean
+  authTokenSet: boolean
+}
+
+export async function routeStatus(
+  context: vscode.ExtensionContext,
+  providerId: string,
+): Promise<RouteStatus> {
+  const output = await runHelper(context, ['route-status', providerId])
+  return JSON.parse(output) as RouteStatus
+}
+
 export async function launchTerminal(
   context: vscode.ExtensionContext,
   providerId: string,

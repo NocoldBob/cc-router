@@ -15,6 +15,7 @@
   "command.openDesktop": "CC Router：打开桌面端",
   "command.repairDesktop": "CC Router：修复或更新桌面端",
   "command.storeCredential": "CC Router：保存 API Key 到凭据库",
+  "command.manageProviders": "CC Router：管理 Provider",
   "configuration.helperPath": "可选的 CC Router helper 程序路径。留空时使用扩展自带的对应平台 helper。",
   "configuration.desktopPath": "可选的 CC Router 桌面程序路径。"
 }

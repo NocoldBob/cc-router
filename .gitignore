@@ -41,3 +41,6 @@ route-backup.json
 *.sln
 *.sw?
 vscode-extension/src/shared/
+vscode-extension/media/manage.js
+vscode-extension/media/manage.js.map
+vscode-extension/media/manage.css
