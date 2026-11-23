@@ -1,12 +1,13 @@
-mod backup;
+pub mod backup;
 mod commands;
 pub mod credentials;
-mod diagnostics;
+pub mod diagnostics;
+pub mod launch;
 pub mod models;
 pub mod probe;
 pub mod provider_store;
 mod sessions;
-mod system_env;
+pub mod system_env;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
