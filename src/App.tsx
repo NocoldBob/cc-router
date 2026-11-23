@@ -56,6 +56,7 @@ import {
   nativeRuntimeAvailable,
   rollbackUserRoute,
   saveCredential,
+  saveDiagnosticsReport,
   syncProviderCatalog,
   type RuntimeInfo,
   type LaunchReadiness,
@@ -419,15 +420,7 @@ function App() {
     setBusy('diagnostics')
     try {
       const report = await getDiagnostics(cliPath)
-      const blob = new Blob([JSON.stringify(report, null, 2)], {
-        type: 'application/json',
-      })
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = 'cc-router-diagnostics.json'
-      anchor.click()
-      URL.revokeObjectURL(url)
+      await saveDiagnosticsReport(report)
       flash('诊断报告已导出，仅含变量名与脱敏路径，不含 API Key')
     } catch (error) {
       flash(errorMessage(error))

@@ -221,3 +221,16 @@ export async function clearUserRoute() {
 export async function rollbackUserRoute() {
   return invoke<NativeActionResult>('rollback_user_route')
 }
+
+/** Saves the redacted diagnostics report as a JSON file download. */
+export async function saveDiagnosticsReport(report: DiagnosticsReport): Promise<void> {
+  const blob = new Blob([JSON.stringify(report, null, 2)], {
+    type: 'application/json',
+  })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = 'cc-router-diagnostics.json'
+  anchor.click()
+  URL.revokeObjectURL(url)
+}

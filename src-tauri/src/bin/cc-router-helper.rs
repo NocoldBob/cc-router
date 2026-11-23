@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -8,7 +9,10 @@ use cc_router_lib::credentials;
 use cc_router_lib::diagnostics;
 use cc_router_lib::launch;
 use cc_router_lib::launch::CLAUDE_MODE_VARIABLES;
-use cc_router_lib::models::{ActionResult, ProviderConfig, ROUTE_VARIABLES};
+use cc_router_lib::models::{
+    snapshot_value, ActionResult, CredentialStatus, ProviderConfig, UserRouteStatus,
+    ROUTE_VARIABLES,
+};
 use cc_router_lib::probe;
 use cc_router_lib::provider_store;
 use cc_router_lib::system_env;
@@ -94,6 +98,21 @@ fn run() -> Result<(), String> {
         }
         "clear-route" => clear_route(),
         "rollback-route" => rollback_route(),
+        "route-status" => {
+            let provider_id = required_argument(&mut arguments, "Provider ID")?;
+            route_status(&provider_id)
+        }
+        "credential-status" => {
+            let provider_id = required_argument(&mut arguments, "Provider ID")?;
+            let status = CredentialStatus {
+                provider_id: provider_id.clone(),
+                configured: credentials::provider_token_exists(&provider_id)?,
+            };
+            let json = serde_json::to_string(&status)
+                .map_err(|error| format!("Could not serialize the credential status: {error}"))?;
+            println!("{json}");
+            Ok(())
+        }
         "diagnostics" => print_diagnostics(),
         _ => launch_wrapped(PathBuf::from(first), arguments.collect()),
     }
@@ -242,6 +261,33 @@ fn print_diagnostics() -> Result<(), String> {
     );
     let json = serde_json::to_string(&report)
         .map_err(|error| format!("Could not serialize the diagnostics report: {error}"))?;
+    println!("{json}");
+    Ok(())
+}
+
+/// Reports the current Windows user route and whether it matches the given
+/// Provider, mirroring the desktop's `get_user_route_status` command.
+fn route_status(provider_id: &str) -> Result<(), String> {
+    launch::persistent_route_guard()?;
+    let provider = enabled_provider(provider_id)?;
+    provider.route.validate()?;
+    let current = system_env::read_user_route()?.snapshot;
+    let expected = provider
+        .route
+        .environment(String::new())
+        .into_iter()
+        .collect::<HashMap<_, _>>();
+    let matches_selected = ROUTE_VARIABLES
+        .iter()
+        .filter(|name| **name != "ANTHROPIC_AUTH_TOKEN")
+        .all(|name| expected.get(*name).map(String::as_str) == snapshot_value(&current, name));
+    let status = UserRouteStatus {
+        route: current,
+        matches_selected,
+        backup_available: backup::exists_in(&provider_store::data_directory()?),
+    };
+    let json = serde_json::to_string(&status)
+        .map_err(|error| format!("Could not serialize the route status: {error}"))?;
     println!("{json}");
     Ok(())
 }

@@ -247,6 +247,28 @@ pub struct ActionResult {
     pub process_id: Option<u32>,
 }
 
+/// Reads one route value out of a user-route snapshot by variable name.
+pub fn snapshot_value<'a>(snapshot: &'a RouteSnapshot, name: &str) -> Option<&'a str> {
+    match name {
+        "ANTHROPIC_BASE_URL" => snapshot.base_url.as_deref(),
+        "ANTHROPIC_MODEL" => snapshot.model.as_deref(),
+        "ANTHROPIC_DEFAULT_OPUS_MODEL" => snapshot.opus_model.as_deref(),
+        "ANTHROPIC_DEFAULT_SONNET_MODEL" => snapshot.sonnet_model.as_deref(),
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL" => snapshot.haiku_model.as_deref(),
+        "ANTHROPIC_DEFAULT_FABLE_MODEL" => snapshot.fable_model.as_deref(),
+        "CLAUDE_CODE_SUBAGENT_MODEL" => snapshot.subagent_model.as_deref(),
+        "CLAUDE_CODE_EFFORT_LEVEL" => snapshot.effort_level.as_deref(),
+        "CLAUDE_CODE_AUTO_COMPACT_WINDOW" => snapshot.auto_compact_window.as_deref(),
+        "CLAUDE_CODE_MAX_CONTEXT_TOKENS" => snapshot.max_context_tokens.as_deref(),
+        "API_TIMEOUT_MS" => snapshot.api_timeout_ms.as_deref(),
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC" => {
+            snapshot.disable_nonessential_traffic.as_deref()
+        }
+        "CLAUDE_CODE_MAX_OUTPUT_TOKENS" => snapshot.max_output_tokens.as_deref(),
+        _ => None,
+    }
+}
+
 pub fn validate_provider_id(id: &str) -> Result<(), String> {
     let valid = !id.is_empty()
         && id.len() <= 80
