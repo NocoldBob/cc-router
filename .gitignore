@@ -40,3 +40,4 @@ route-backup.json
 *.njsproj
 *.sln
 *.sw?
+vscode-extension/src/shared/

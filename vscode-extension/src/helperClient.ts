@@ -5,6 +5,12 @@ import * as vscode from 'vscode'
 
 const execFileAsync = promisify(execFile)
 
+/** Result of a helper route action; mirrors the desktop ActionResult shape. */
+export interface HelperActionResult {
+  message: string
+  changedVariables: string[]
+}
+
 export interface ProviderSummary {
   id: string
   displayName: string
@@ -79,21 +85,101 @@ export async function probeProvider(
   return JSON.parse(output) as ProbeResult
 }
 
+export async function helperVersion(context: vscode.ExtensionContext): Promise<string> {
+  return runHelper(context, ['version'])
+}
+
+/**
+ * Replaces the helper-side Provider catalog mirror. The catalog JSON travels
+ * over stdin and contains no credentials by construction.
+ */
+export async function syncCatalog(
+  context: vscode.ExtensionContext,
+  catalogJson: string,
+): Promise<void> {
+  await runHelper(context, ['sync-catalog'], 10_000, catalogJson)
+}
+
+/** Reads the secret-free catalog the desktop app may have created. */
+export async function exportCatalog(context: vscode.ExtensionContext): Promise<string> {
+  return runHelper(context, ['export-catalog'])
+}
+
+/**
+ * Stores an API key in the OS credential store. The key is piped to the
+ * helper over stdin and never appears in process arguments or logs.
+ */
+export async function storeCredential(
+  context: vscode.ExtensionContext,
+  providerId: string,
+  token: string,
+): Promise<void> {
+  await runHelper(context, ['store-credential', providerId], 10_000, `${token}\n`)
+}
+
+export async function deleteCredential(
+  context: vscode.ExtensionContext,
+  providerId: string,
+): Promise<void> {
+  await runHelper(context, ['delete-credential', providerId])
+}
+
+export async function launchTerminal(
+  context: vscode.ExtensionContext,
+  providerId: string,
+  workingDirectory?: string,
+): Promise<HelperActionResult> {
+  const args = ['launch-terminal', providerId]
+  if (workingDirectory) args.push(workingDirectory)
+  const output = await runHelper(context, args)
+  return JSON.parse(output) as HelperActionResult
+}
+
+export async function applyRoute(
+  context: vscode.ExtensionContext,
+  providerId: string,
+): Promise<HelperActionResult> {
+  const output = await runHelper(context, ['apply-route', providerId])
+  return JSON.parse(output) as HelperActionResult
+}
+
+export async function clearRoute(context: vscode.ExtensionContext): Promise<HelperActionResult> {
+  const output = await runHelper(context, ['clear-route'])
+  return JSON.parse(output) as HelperActionResult
+}
+
+export async function rollbackRoute(context: vscode.ExtensionContext): Promise<HelperActionResult> {
+  const output = await runHelper(context, ['rollback-route'])
+  return JSON.parse(output) as HelperActionResult
+}
+
+/** Redacted diagnostics report; contains variable names and booleans only. */
+export async function getDiagnostics(context: vscode.ExtensionContext): Promise<string> {
+  return runHelper(context, ['diagnostics'], 15_000)
+}
+
 async function runHelper(
   context: vscode.ExtensionContext,
   args: string[],
   timeout = 10_000,
+  stdin?: string,
 ): Promise<string> {
   const helper = resolveHelperPath(context)
   if (!existsSync(helper)) {
     throw new Error(`CC Router helper was not found: ${helper}`)
   }
   try {
-    const { stdout } = await execFileAsync(helper, args, {
+    const child = execFileAsync(helper, args, {
       windowsHide: true,
       encoding: 'utf8',
       timeout,
     })
+    if (stdin !== undefined) {
+      if (!child.child.stdin) throw new Error('CC Router helper stdin is unavailable.')
+      child.child.stdin.write(stdin)
+      child.child.stdin.end()
+    }
+    const { stdout } = await child
     return stdout.trim()
   } catch (error) {
     const detail = error as Error & { stderr?: string }

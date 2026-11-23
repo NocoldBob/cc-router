@@ -1,5 +1,5 @@
 import { invoke, isTauri } from '@tauri-apps/api/core'
-import type { Provider } from './types'
+import type { Provider } from '../shared/types'
 
 export interface NativeProviderRoute {
   id: string

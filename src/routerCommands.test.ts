@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { applyProviderPreset, defaultProviders } from './defaultProviders'
+import { applyProviderPreset, defaultProviders } from '../shared/defaultProviders'
 import {
   generateClearCommands,
   generatePersistentCommands,
   generateSessionCommands,
   generateSettingsSnippet,
   generateStatusCommands,
-} from './routerCommands'
+} from '../shared/routerCommands'
 
 describe('route command generation', () => {
   it('generates the expected DeepSeek current-session route', () => {

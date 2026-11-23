@@ -5,7 +5,7 @@ import {
   findProviderPreset,
   providerMatchesDefaultTemplate,
   providerPresets,
-} from './defaultProviders'
+} from '../shared/defaultProviders'
 
 describe('built-in Provider template metadata', () => {
   it('only treats unchanged built-in route values as verified', () => {

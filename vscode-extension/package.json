@@ -115,6 +115,11 @@
       {
         "command": "ccRouter.repairDesktop",
         "title": "%command.repairDesktop%"
+      },
+      {
+        "command": "ccRouter.storeCredential",
+        "title": "%command.storeCredential%",
+        "icon": "$(key)"
       }
     ],
     "menus": {
@@ -163,8 +168,9 @@
     }
   },
   "scripts": {
-    "check": "tsc --noEmit -p tsconfig.json && oxlint src",
-    "compile": "tsc -p tsconfig.json",
+    "sync:shared": "node scripts/sync-shared.mjs",
+    "check": "pnpm sync:shared && tsc --noEmit -p tsconfig.json && oxlint src",
+    "compile": "pnpm sync:shared && tsc -p tsconfig.json",
     "build:helper": "cargo build --manifest-path ../src-tauri/Cargo.toml --release --bin cc-router-helper",
     "build:desktop": "pnpm --dir .. desktop:build",
     "copy:binaries": "node scripts/copy-binaries.mjs",

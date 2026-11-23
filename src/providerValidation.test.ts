@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { defaultProviders } from './defaultProviders'
-import { providerIsValid } from './providerValidation'
+import { defaultProviders } from '../shared/defaultProviders'
+import { providerIsValid } from '../shared/providerValidation'
 
 describe('Provider validation', () => {
   it('accepts HTTP endpoints for trusted intranet Provider routes', () => {

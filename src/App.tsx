@@ -38,7 +38,7 @@ import {
   providerMatchesDefaultTemplate,
   providerPresets,
   providerTemplateMetadata,
-} from './defaultProviders'
+} from '../shared/defaultProviders'
 import {
   applyUserRoute,
   clearUserRoute,
@@ -63,9 +63,9 @@ import {
   type SessionTarget,
   type UserRouteStatus,
 } from './nativeRouter'
-import { providerIsValid } from './providerValidation'
-import { generateOutput, generateStatusCommands } from './routerCommands'
-import type { OutputMode, Provider, ProviderAccent } from './types'
+import { providerIsValid } from '../shared/providerValidation'
+import { generateOutput, generateStatusCommands } from '../shared/routerCommands'
+import type { OutputMode, Provider, ProviderAccent } from '../shared/types'
 
 const STORAGE_KEY = 'cc-router.providers.v1'
 const CLI_PATH_KEY = 'cc-router.cli-path.v1'

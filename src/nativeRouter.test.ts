@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultProviders } from './defaultProviders'
+import { defaultProviders } from '../shared/defaultProviders'
 import { toNativeRoute } from './nativeRouter'
 
 describe('native route payload', () => {

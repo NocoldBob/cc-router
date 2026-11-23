@@ -16,9 +16,11 @@ import {
   probeProvider,
   resolveHelperPath,
   selectProvider,
+  storeCredential,
   type ProviderSummary,
 } from './helperClient'
 import { text } from './localization'
+import { ProviderStore } from './providerStore'
 import { probeLabel, RouterTreeProvider } from './routerTree'
 
 const PREVIOUS_WRAPPER_KEY = 'ccRouter.previousClaudeProcessWrapper'
@@ -26,6 +28,18 @@ const ONBOARDING_VERSION_KEY = 'ccRouter.onboardingVersion'
 const DESKTOP_INSTALL_OFFERED_KEY = 'ccRouter.desktopInstallOffered'
 const CLAUDE_EXTENSION_ID = 'anthropic.claude-code'
 const CLAUDE_WRAPPER_SETTING = 'claudeProcessWrapper'
+
+let providerStorePromise: Promise<ProviderStore> | undefined
+
+function providerStore(context: vscode.ExtensionContext): Promise<ProviderStore> {
+  if (!providerStorePromise) {
+    providerStorePromise = ProviderStore.load(context)
+    providerStorePromise.catch(() => {
+      providerStorePromise = undefined
+    })
+  }
+  return providerStorePromise
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 35)
@@ -65,6 +79,8 @@ export function activate(context: vscode.ExtensionContext): void {
       restorePreviousWrapper(context)),
     vscode.commands.registerCommand('ccRouter.refresh', () =>
       refreshWithFeedback(context, refresh)),
+    vscode.commands.registerCommand('ccRouter.storeCredential', () =>
+      saveApiKey(context, refresh)),
     vscode.commands.registerCommand('ccRouter.openDesktop', () => openDesktop(context)),
     vscode.commands.registerCommand('ccRouter.repairDesktop', () =>
       repairDesktop(context, refresh)),
@@ -80,8 +96,69 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   )
 
+  void providerStore(context).catch(() => undefined)
   void refresh()
   void showOnboarding(context)
+}
+
+async function saveApiKey(
+  context: vscode.ExtensionContext,
+  refresh: () => Promise<void>,
+): Promise<void> {
+  if (!environmentSupported() || !helperReady(context)) return
+  let store: ProviderStore
+  try {
+    store = await providerStore(context)
+  } catch (error) {
+    await showHelperError(context, error)
+    return
+  }
+  const providers = store.list().filter((provider) => provider.enabled)
+  if (!providers.length) {
+    void vscode.window.showWarningMessage(
+      text('没有可用的 Provider。', 'No Provider is available.'),
+    )
+    return
+  }
+  const picked = await vscode.window.showQuickPick(
+    providers.map((provider) => ({
+      label: provider.displayName,
+      description: provider.baseUrl,
+      provider,
+    })),
+    {
+      title: text('CC Router：保存 API Key', 'CC Router: Save API Key'),
+      placeHolder: text('选择这个 Key 属于哪个 Provider', 'Select the Provider this key belongs to'),
+    },
+  )
+  if (!picked) return
+  const token = await vscode.window.showInputBox({
+    title: text(
+      `${picked.provider.displayName} 的 API Key`,
+      `${picked.provider.displayName} API Key`,
+    ),
+    prompt: text(
+      'Key 只会写入系统凭据库，不会保存在设置或配置文件中。',
+      'The key is written to the OS credential store only, never to settings or config files.',
+    ),
+    password: true,
+    ignoreFocusOut: true,
+    validateInput: (value) =>
+      value.trim() ? undefined : text('API Key 不能为空。', 'The API key cannot be empty.'),
+  })
+  if (!token?.trim()) return
+  try {
+    await storeCredential(context, picked.provider.id, token.trim())
+    await refresh()
+    void vscode.window.showInformationMessage(
+      text(
+        `${picked.provider.displayName} 的 API Key 已保存到 ${credentialStoreLabel()}。`,
+        `${picked.provider.displayName} API Key saved to ${credentialStoreLabel()}.`,
+      ),
+    )
+  } catch (error) {
+    await showHelperError(context, error)
+  }
 }
 
 export function deactivate(): void {}
