@@ -33,10 +33,12 @@ CC Router 是一个面向 Windows 与 Ubuntu 的 Claude Code 路由启动器：�
 - 可导出脱敏诊断报告（应用版本、平台、凭据存储、CLI 检测、仅变量名的环境冲突、
   隐藏用户目录前缀的路径、各 Provider 是否已配置凭据），不读取 API Key。
 - 可选地写入 Windows 用户环境，供新终端和重启后的 VS Code Claude Code 插件读取。
-- 提供 Windows 与 Ubuntu VS Code Companion，为每个本地工作区选择 Provider，并通过
-  Claude Code 的受支持进程 wrapper 启动隔离的新会话。
-- VS Code Companion 的 VSIX 内置同版本桌面安装器，首次启用时经用户确认后为当前
-  当前系统用户安装；不要求用户预先单独下载桌面端。
+- 提供 Windows 与 Ubuntu VS Code Companion（1.3.0 起自包含）：内置与桌面端相同的
+  管理面板（Provider 编辑、预设切换、API Key 保存、隔离终端、Windows 默认路由、
+  脱敏诊断），无需安装桌面端；为每个本地工作区选择 Provider，并通过 Claude Code
+  的受支持进程 wrapper 启动隔离的新会话。
+- 桌面端作为独立产品继续维护，与扩展共享同一份无密钥目录（后保存者生效）；
+  扩展首次激活时自动导入桌面端已有配置。
 - 系统写入前备份旧路由，支持一次回滚。
 - 同步管理 14 个 Claude Code 路由、模型、子代理、effort、上下文与附加请求变量。
 - 生成脱敏的 PowerShell、Bash 和 `settings.json` 备用配置。
@@ -91,8 +93,8 @@ CC Router 不在 HTTP 请求路径中。应用关闭后，已经启动的 Claude
 - “设为 Windows 默认”会把 Key 写入用户级 `ANTHROPIC_AUTH_TOKEN`，这是明文用户环境变量；UI 和文档必须继续明确提示。
 - 同一系统用户权限下的恶意进程仍可能读取目标进程环境或调用系统凭据接口；系统凭据存储不是对本机同权限恶意软件的绝对隔离。
 - 软件未代码签名时，Windows 可能显示未知发布者或 SmartScreen 提示。
-- VS Code Companion 不得无提示安装桌面程序；首次安装必须明确征得用户确认，并
-  保留已有安装自动发现和手动选择程序路径的恢复入口。
+- VS Code Companion 自 1.3.0 起不再安装桌面程序；桌面端的获取与更新完全由用户
+  通过 GitHub Releases 自行决定。
 - Provider 最终会接收用户发送给模型的数据；“不上传数据”仅指 CC Router 自身没有项目运营的后端和额外上传行为。
 
 ## 4. 与 CC Switch 的主要差异
@@ -231,8 +233,9 @@ README 第一屏应直接说明：
 
 ## 10. 当前代码入口
 
-- `src/App.tsx`：Provider 编辑、凭据状态和路由控制 UI。
-- `src/defaultProviders.ts`：DeepSeek/Kimi 内置模板。
+- `src/App.tsx`：Provider 编辑、凭据状态和路由控制 UI（桌面端与扩展 webview 共用）。
+- `shared/defaultProviders.ts`：内置 Provider 模板与预设（桌面端和扩展共用）。
+- `src/webviewBridge.ts`：管理 UI 的 VS Code webview 后端（postMessage 版 nativeRouter）。
 - `src/nativeRouter.ts`：Tauri IPC 数据边界。
 - `src/routerCommands.ts`：脱敏手动命令生成。
 - `src-tauri/src/credentials.rs`：Windows Credential Manager / Linux Secret Service。

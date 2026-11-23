@@ -1,13 +1,9 @@
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
 import * as vscode from 'vscode'
 import {
-  bundledDesktopRelativePath,
   credentialStoreLabel,
   findDesktopExecutable,
   focusRunningDesktop,
-  installDesktop,
-  stopRunningDesktop,
 } from './desktopApp'
 import {
   clearProvider,
@@ -26,7 +22,6 @@ import { probeLabel, RouterTreeProvider } from './routerTree'
 
 const PREVIOUS_WRAPPER_KEY = 'ccRouter.previousClaudeProcessWrapper'
 const ONBOARDING_VERSION_KEY = 'ccRouter.onboardingVersion'
-const DESKTOP_INSTALL_OFFERED_KEY = 'ccRouter.desktopInstallOffered'
 const CLAUDE_EXTENSION_ID = 'anthropic.claude-code'
 const CLAUDE_WRAPPER_SETTING = 'claudeProcessWrapper'
 
@@ -84,9 +79,7 @@ export function activate(context: vscode.ExtensionContext): void {
       saveApiKey(context, refresh)),
     vscode.commands.registerCommand('ccRouter.manageProviders', () =>
       ManagePanel.show(context, providerStore(context), refresh)),
-    vscode.commands.registerCommand('ccRouter.openDesktop', () => openDesktop(context)),
-    vscode.commands.registerCommand('ccRouter.repairDesktop', () =>
-      repairDesktop(context, refresh)),
+    vscode.commands.registerCommand('ccRouter.openDesktop', () => openDesktop()),
     vscode.window.onDidChangeActiveTextEditor(refresh),
     vscode.workspace.onDidChangeWorkspaceFolders(refresh),
     vscode.workspace.onDidChangeConfiguration((event) => {
@@ -172,11 +165,6 @@ async function showOnboarding(context: vscode.ExtensionContext): Promise<void> {
     await context.globalState.update(ONBOARDING_VERSION_KEY, version)
     await vscode.commands.executeCommand('workbench.view.extension.ccRouter')
   }
-  if (!context.globalState.get<boolean>(DESKTOP_INSTALL_OFFERED_KEY)) {
-    await context.globalState.update(DESKTOP_INSTALL_OFFERED_KEY, true)
-    const configured = vscode.workspace.getConfiguration('ccRouter').get<string>('desktopPath', '')
-    if (!(await findDesktopExecutable(configured))) await openDesktop(context)
-  }
 }
 
 async function chooseProvider(
@@ -255,9 +243,9 @@ async function applyProvider(
         `${provider.displayName} 尚未在 ${credentialStoreLabel()} 中配置 API Key。`,
         `${provider.displayName} has no API Key in ${credentialStoreLabel()}.`,
       ),
-      text('打开 CC Router', 'Open CC Router'),
+      text('打开 Provider 管理', 'Open Provider Manager'),
     )
-    if (action) await openDesktop(context)
+    if (action) await vscode.commands.executeCommand('ccRouter.manageProviders')
     return undefined
   }
 
@@ -405,9 +393,9 @@ async function probeConnection(
           `${provider.displayName} 尚未在 ${credentialStoreLabel()} 中配置 API Key。`,
           `${provider.displayName} has no API Key in ${credentialStoreLabel()}.`,
         ),
-        text('打开 CC Router', 'Open CC Router'),
+        text('打开 Provider 管理', 'Open Provider Manager'),
       )
-      if (action) await openDesktop(context)
+      if (action) await vscode.commands.executeCommand('ccRouter.manageProviders')
       return
     }
 
@@ -548,16 +536,10 @@ function helperReady(context: vscode.ExtensionContext): boolean {
 }
 
 async function showHelperError(context: vscode.ExtensionContext, error: unknown): Promise<void> {
-  const repair = text('修复/更新桌面端', 'Repair/Update Desktop')
-  const open = text('打开 CC Router', 'Open CC Router')
-  const action = await vscode.window.showErrorMessage(
-    localizedError(error),
-    ...(sharedCatalogMissing(error) ? [repair, open] : [open]),
-  )
-  if (action === repair) {
-    await vscode.commands.executeCommand('ccRouter.repairDesktop')
-  } else if (action === open) {
-    await openDesktop(context)
+  const manage = text('打开 Provider 管理', 'Open Provider Manager')
+  const action = await vscode.window.showErrorMessage(localizedError(error), manage)
+  if (action === manage) {
+    await vscode.commands.executeCommand('ccRouter.manageProviders')
   }
 }
 
@@ -590,138 +572,12 @@ async function refreshWithFeedback(
   }
 }
 
-async function repairDesktop(
-  context: vscode.ExtensionContext,
-  refresh: () => Promise<void>,
-): Promise<void> {
-  if (!environmentSupported()) return
-  const installer = context.asAbsolutePath(bundledDesktopRelativePath())
-  if (!existsSync(installer)) {
-    void vscode.window.showErrorMessage(
-      text(
-        '当前扩展包未包含桌面安装器，请从 Marketplace 更新或重新安装 CC Router Companion。',
-        'This extension package has no desktop installer. Update or reinstall CC Router Companion from the Marketplace.',
-      ),
-    )
-    return
-  }
-
-  const confirm = text('修复并重新打开', 'Repair and Reopen')
-  const choice = await vscode.window.showWarningMessage(
-    text(
-      `这会关闭正在运行的 CC Router，并用扩展内置的匹配版本覆盖安装。Provider 配置会保留，API Key 仍保存在 ${credentialStoreLabel()}。`,
-      `This closes the running CC Router and reinstalls the matching bundled version. Provider settings are preserved and API Keys remain in ${credentialStoreLabel()}.`,
-    ),
-    { modal: true },
-    confirm,
-  )
-  if (choice !== confirm) return
-
-  try {
-    await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: text('正在修复 CC Router 桌面端...', 'Repairing CC Router desktop...'),
-        cancellable: false,
-      },
-      async () => {
-        await stopRunningDesktop()
-        await installDesktop(installer)
-      },
-    )
-    const executable = await findDesktopExecutable('')
-    if (!executable) {
-      throw new Error(text('修复后未找到桌面程序。', 'Desktop app was not found after repair.'))
-    }
-    launchDesktop(executable)
-
-    const synchronized = await waitForProviderCatalog(context, currentWorkspace())
-    await refresh()
-    if (synchronized) {
-      void vscode.window.showInformationMessage(
-        text(
-          '桌面端已修复，共享 Provider 配置已恢复。',
-          'Desktop repaired and the shared Provider configuration is available.',
-        ),
-      )
-    } else {
-      void vscode.window.showWarningMessage(
-        text(
-          '桌面端已修复并打开。请在桌面端点击一次“保存配置”，然后再刷新此视图。',
-          'Desktop repaired and opened. Save once in the desktop app, then refresh this view.',
-        ),
-      )
-    }
-  } catch (error) {
-    void vscode.window.showErrorMessage(
-      text(
-        `CC Router 桌面端修复失败：${localizedError(error)}`,
-        `CC Router desktop repair failed: ${localizedError(error)}`,
-      ),
-    )
-  }
-}
-
-async function waitForProviderCatalog(
-  context: vscode.ExtensionContext,
-  workspace: string | undefined,
-): Promise<boolean> {
-  if (!workspace) return false
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    try {
-      await listProviders(context, workspace)
-      return true
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-    }
-  }
-  return false
-}
-
-async function openDesktop(context: vscode.ExtensionContext): Promise<void> {
+async function openDesktop(): Promise<void> {
   if (await focusRunningDesktop()) return
 
   const configuration = vscode.workspace.getConfiguration('ccRouter')
   const configured = configuration.get<string>('desktopPath', '').trim()
   let executable = await findDesktopExecutable(configured)
-  const installer = context.asAbsolutePath(bundledDesktopRelativePath())
-  if (!executable && existsSync(installer)) {
-    const install = text('立即安装', 'Install Now')
-    const locate = text('选择已有程序', 'Locate Existing App')
-    const choice = await vscode.window.showInformationMessage(
-      text(
-        'CC Router Companion 已包含当前系统的桌面管理工具。是否现在为当前用户安装？安装后可以直接管理 Provider 和 API Key。',
-        'CC Router Companion includes the desktop manager for this platform. Install it for the current user now?',
-      ),
-      { modal: true },
-      install,
-      locate,
-    )
-    if (choice === install) {
-      try {
-        await vscode.window.withProgress(
-          {
-            location: vscode.ProgressLocation.Notification,
-            title: text('正在安装 CC Router 桌面端...', 'Installing CC Router desktop...'),
-            cancellable: false,
-          },
-          () => installDesktop(installer),
-        )
-        executable = await findDesktopExecutable('')
-      } catch (error) {
-        void vscode.window.showErrorMessage(
-          text(
-            `CC Router 桌面端安装失败：${localizedError(error)}`,
-            `CC Router desktop installation failed: ${localizedError(error)}`,
-          ),
-        )
-      }
-    } else if (choice === locate) {
-      executable = await locateDesktopExecutable(configuration)
-    } else {
-      return
-    }
-  }
   if (!executable) {
     const locate = text('选择本机程序', 'Locate App')
     const openReleases = text('下载安装包', 'Open Releases')

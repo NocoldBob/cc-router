@@ -1,5 +1,23 @@
 # Change Log
 
+## 1.3.0
+
+- The extension is now self-contained: a new "CC Router: Manage Providers"
+  command opens the full management UI (the same interface as the desktop app)
+  in a webview panel — add or edit Providers, switch model presets, save API
+  Keys to the OS credential store, run connection probes, open isolated
+  terminals, manage the Windows default route (with backup/rollback), and
+  export redacted diagnostics, all without installing the desktop app.
+- New "CC Router: Save API Key to Credential Store" command with a
+  password-masked input.
+- Providers are stored by the extension and mirrored to the bundled helper on
+  activation and on every save; an existing desktop-written catalog is imported
+  automatically on first run. The desktop app remains an optional standalone
+  product and is no longer required, installed, or repaired by the extension.
+- The VSIX no longer embeds the desktop installer (Windows package shrinks
+  from ~4.5 MB to ~2.7 MB, Linux from ~85 MB to ~6 MB) and now includes the
+  management webview bundle.
+
 ## 1.2.0
 
 - Bundled CC Router desktop `0.5.0` with refreshed official templates (DeepSeek

@@ -7,3 +7,5 @@ bin/cc-router-helper.exe
 desktop/.gitkeep
 desktop/cc-router-desktop-setup.exe
 *.vsix
+desktop/
+media/*.map

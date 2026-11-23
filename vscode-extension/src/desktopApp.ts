@@ -1,7 +1,6 @@
 import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { chmod, copyFile, mkdir } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -14,12 +13,6 @@ if (-not $process) { exit 2 }
 $shell = New-Object -ComObject WScript.Shell
 [void]$shell.AppActivate($process.Id)
 Write-Output 'focused'
-`
-
-const stopScript = String.raw`
-$processes = Get-Process -Name 'cc-router' -ErrorAction SilentlyContinue
-if (-not $processes) { exit 0 }
-$processes | Stop-Process -Force -ErrorAction Stop
 `
 
 const registryScript = String.raw`
@@ -49,12 +42,6 @@ foreach ($root in $roots) {
 exit 2
 `
 
-export function bundledDesktopRelativePath(): string {
-  return process.platform === 'win32'
-    ? 'desktop/win32-x64/cc-router-desktop-setup.exe'
-    : 'desktop/linux-x64/cc-router-desktop.AppImage'
-}
-
 export function credentialStoreLabel(): string {
   return process.platform === 'win32' ? 'Windows Credential Manager' : 'Linux Secret Service'
 }
@@ -66,18 +53,6 @@ export async function focusRunningDesktop(): Promise<boolean> {
     return stdout.trim() === 'focused'
   } catch {
     return false
-  }
-}
-
-export async function stopRunningDesktop(): Promise<void> {
-  if (process.platform === 'win32') {
-    await runPowerShell(stopScript)
-    return
-  }
-  try {
-    await execFileAsync('pkill', ['-x', 'cc-router'], { timeout: 5_000 })
-  } catch {
-    // A missing process is already stopped.
   }
 }
 
@@ -111,35 +86,6 @@ export async function findDesktopExecutable(configuredPath: string): Promise<str
     return registered && existsSync(registered) ? registered : undefined
   } catch {
     return undefined
-  }
-}
-
-export async function installDesktop(installerPath: string): Promise<void> {
-  if (!existsSync(installerPath)) {
-    throw new Error(`Bundled CC Router installer was not found: ${installerPath}`)
-  }
-
-  if (process.platform === 'linux') {
-    const home = process.env.HOME
-    if (!home) throw new Error('HOME is unavailable; the desktop app cannot be installed.')
-    const dataHome = process.env.XDG_DATA_HOME || join(home, '.local', 'share')
-    const destination = join(dataHome, 'cc-router', 'cc-router.AppImage')
-    await mkdir(dirname(destination), { recursive: true })
-    await copyFile(installerPath, destination)
-    await chmod(destination, 0o755)
-    return
-  }
-
-  try {
-    const installDirectory = join(process.env.LOCALAPPDATA || '', 'Programs', 'CC Router')
-    await execFileAsync(installerPath, ['/S', `/D=${installDirectory}`], {
-      windowsHide: true,
-      encoding: 'utf8',
-      timeout: 120_000,
-    })
-  } catch (error) {
-    const detail = error as Error & { stderr?: string }
-    throw new Error(detail.stderr?.trim() || detail.message)
   }
 }
 

@@ -7,6 +7,32 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-24
+
+### Added
+
+- `cc-router-helper` now exposes the full management surface as subcommands:
+  `sync-catalog`/`export-catalog`, `store-credential`/`delete-credential` (API keys
+  travel over stdin only), `launch-terminal`, `apply-route`/`clear-route`/
+  `rollback-route` (Windows persistent routing with backup and rollback),
+  `credential-status`, `route-status`, `diagnostics`, and `version`. The VS Code
+  Companion `1.3.0` builds on these to work without the desktop app.
+- The Provider templates, validation, and command generators moved to a
+  repository-level `shared/` directory used by both the desktop UI and the VS
+  Code Companion, so the two cannot drift apart.
+
+### Changed
+
+- Shared launch/CLI-detection logic moved from the Tauri commands into a new
+  `launch` library module; route backups gained path-based functions reusable
+  without an `AppHandle`. Desktop behavior is unchanged and the catalog and
+  backup formats are untouched.
+- The desktop app is now an optional standalone product. It remains fully
+  supported, but the VS Code Companion no longer requires it.
+- VS Code Companion reaches `1.3.0`; it is self-contained (bundles only the
+  platform helper and the management webview) and no longer embeds the desktop
+  installer.
+
 ## [0.5.0] - 2026-11-23
 
 ### Added

@@ -3,9 +3,9 @@
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/NocoldBob.cc-router-companion?label=VS%20Code%20Marketplace&color=0078d4)](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion)
 [![Marketplace installs](https://img.shields.io/visual-studio-marketplace/i/NocoldBob.cc-router-companion?label=installs&color=2f6f50)](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion)
 
-为每个本地 Windows 或 Ubuntu VS Code 工作区选择独立的 Claude Code Provider。支持 CC Router
-桌面端中配置的 DeepSeek、Kimi、GLM 智谱、Qwen、MiniMax、本地/局域网部署和自定义
-Anthropic 兼容接口。
+为每个本地 Windows 或 Ubuntu VS Code 工作区选择独立的 Claude Code Provider。内置
+DeepSeek、Kimi、GLM 智谱、Qwen、MiniMax、本地/局域网部署模板，也支持自定义
+Anthropic 兼容接口。**自 1.3.0 起扩展自包含，无需安装桌面端。**
 
 > 无代理，不改 Claude 配置。API Key 保留在系统凭据存储中，仅在
 > 启动新的 Claude Code 子进程时注入。
@@ -14,99 +14,90 @@ Anthropic 兼容接口。
 
 ### 它能做什么
 
+- 内置完整 Provider 管理界面（命令 **CC Router：管理 Provider**）：添加/编辑
+  Provider、切换官方预设、保存 API Key 到系统凭据库、探测连接、导出脱敏诊断。
 - 在 VS Code 侧边栏直接查看并切换当前工作区的 Provider。
-- 一键启动使用所选路由的官方 Claude Code 新会话。
+- 一键启动使用所选路由的官方 Claude Code 新会话，或打开注入路由的隔离终端。
+- 可选地把某个 Provider 设为 Windows 默认路由（写入前自动备份，可回滚）。
 - 不同 VS Code 工作区可以同时使用不同 Provider。
 - 显示模型、Endpoint 和凭据是否已配置，但绝不读取或显示 API Key。
-- 保留状态栏和命令面板入口，适合键盘快速操作。
 
 ### 快速开始
 
 1. 从 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion)
-   安装扩展。首次启用时点击 **立即安装**，扩展会安装内置的匹配版本桌面端。
-2. 在自动打开的桌面端配置 Provider 与 API Key，然后点击一次“保存配置”；不需要先设置
-   Windows 默认路由；Ubuntu 无需且不提供持久默认路由。
-3. 在 VS Code 左侧活动栏打开 **CC Router**。
-4. 点击一个 Provider，为当前工作区启用该路由。
-5. 点击 **启动 Claude Code 新会话**。
+   安装扩展（会自动带上 Anthropic 官方 Claude Code 扩展）。
+2. 执行命令 **CC Router：管理 Provider**，选择内置模板或新建 Provider，填入 API Key
+   后点击“保存配置”。Key 只写入 Windows Credential Manager / Linux Secret Service。
+3. 在 VS Code 左侧活动栏打开 **CC Router**，点击一个 Provider 绑定当前工作区。
+4. 点击 **启动 Claude Code 新会话**，用 `/status` 确认路由生效。
 
-不需要预先单独下载桌面程序。若电脑上已经安装过 CC Router，扩展会自动查找并
-直接打开；也可以在设置中指定已有的 Windows 程序或 Linux AppImage。
+不需要安装任何其他组件。如果电脑上已安装 CC Router 桌面端，两边的 Provider 配置会
+自动合并导入；桌面端继续作为独立产品维护，但不再是插件运行的前提。
 
-[完整中文图文指南](https://github.com/NocoldBob/cc-router/blob/main/docs/VSCODE_COMPANION_GUIDE.md)
+常用命令（`Ctrl+Shift+P`）：
 
-也可以按 `Ctrl+Shift+P`，执行：
-
+- `CC Router：管理 Provider`
 - `CC Router：为工作区选择 Provider`
 - `CC Router：启动 Claude Code 新会话`
-- `CC Router：清除工作区 Provider`
-- `CC Router：修复或更新桌面端`
+- `CC Router：保存 API Key 到凭据库`
 
 只有新启动的 Claude Code 会话使用所选路由，已有会话不会热切换。
 
-### 内置桌面管理工具
+[完整中文图文指南](https://github.com/NocoldBob/cc-router/blob/main/docs/VSCODE_COMPANION_GUIDE.md)
 
-VS Code 扩展负责工作区选择和快捷启动；桌面端负责编辑 Provider，并通过 Windows
-Credential Manager 或 Linux Secret Service 安全保存 API Key。扩展不会把 Key 写入 VS Code 用户设置、
-工作区文件、日志或扩展状态。桌面安装器包含在 VSIX 中，但只会在用户明确确认后
-为当前系统用户安装。
+当前支持本地 Windows 10/11 x64 与 Ubuntu Desktop 22.04/24.04 x64 工作区，暂不支持
+WSL、SSH 和 Dev Containers。
 
-当前支持本地 Windows 10/11 x64 与 Ubuntu Desktop 22.04/24.04 x64 工作区，暂不支持 WSL、SSH 和 Dev
-Containers。需要同时安装 Anthropic 官方 Claude Code 扩展。
+### 安全边界
 
-### 配置保存后仍然不显示
-
-如果桌面端可以保存，但侧边栏一直显示“尚未找到共享 Provider 配置”，通常是电脑上
-残留的旧版桌面端被插件优先打开。点击侧边栏中的 **修复或更新桌面端**，确认后插件会
-关闭旧桌面端，并用 VSIX 内置的匹配版本覆盖安装。Provider 配置会保留，API Key 仍在
-系统凭据存储中。
-
-修复完成后，插件会自动等待共享配置；若仍未出现，请在重新打开的桌面端点击一次
-**保存配置**，再点击刷新。桌面端和 VS Code 还必须运行在同一个系统用户账户下。
+扩展通过 Claude Code 官方支持的进程 wrapper 启动会话。内置原生 helper 仅在启动
+Claude Code 时从系统凭据库读取所选 Provider 的 Key，并注入该子进程环境；Key 不写入
+VS Code 设置、工作区文件、日志或扩展状态，webview 管理界面也只能看到“是否已配置”。
+CC Router 不运行 HTTP 代理，不接触模型流量。
 
 ---
 
 ## English
 
 CC Router Companion selects a process-isolated, Anthropic-compatible Provider for each local
-Windows or Ubuntu VS Code workspace. It works with CC Router desktop and the official Anthropic Claude
-Code extension.
+Windows or Ubuntu VS Code workspace. **Since 1.3.0 the extension is self-contained** — no
+desktop app required.
 
 ### Features
 
+- Full Provider management UI inside VS Code (**CC Router: Manage Providers**): built-in
+  official templates (DeepSeek, Kimi, GLM, Qwen, MiniMax, local/LAN), atomic model presets,
+  API keys stored in the OS credential store, connection probes, isolated terminals, the
+  optional Windows default route with backup/rollback, and redacted diagnostics export.
 - View and switch the current workspace Provider from a native VS Code sidebar.
 - Start a new official Claude Code session with the selected route in one click.
 - Use different Providers in multiple VS Code workspaces at the same time.
 - See model, endpoint and credential status without exposing the API Key.
-- Keep status bar and Command Palette shortcuts for keyboard-first workflows.
 
 ### Quick start
 
 1. Install the extension from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion).
-   On first activation, click **Install Now** to install the bundled, matching desktop manager.
-2. Configure Providers and API Keys in the desktop app that opens, then save once. Setting a
-   Windows default route first is not required. Ubuntu does not use persistent default routing.
-3. Open **CC Router** from the VS Code Activity Bar.
-4. Click a Provider to bind it to the current workspace.
-5. Click **Start New Claude Code Session**.
+   The official Anthropic Claude Code extension is installed automatically as a dependency.
+2. Run **CC Router: Manage Providers**, pick a built-in template or create a Provider, paste
+   the API Key and save. Keys are written only to Windows Credential Manager or Linux Secret
+   Service.
+3. Open **CC Router** from the Activity Bar and click a Provider to bind the workspace.
+4. Click **Start New Claude Code Session** and confirm the route with `/status`.
 
-No separate desktop download is required. An existing CC Router installation is discovered
-automatically, and a custom executable can still be selected as a recovery option.
-
-If settings save in the desktop app but the sidebar still cannot find the shared Provider catalog,
-run **CC Router: Repair or Update Desktop App**. After confirmation, the extension closes the old
-desktop process and reinstalls the matching bundled version. Provider settings and Credential
-store entries are preserved. The desktop app and VS Code must run under the same OS user.
+No other components are required. An existing CC Router desktop installation keeps working;
+its Provider catalog is imported automatically. The desktop app remains an optional,
+independently maintained product.
 
 Only new Claude Code sessions use the selected route. Existing sessions are not hot-switched.
 
 ### Security boundary
 
 The extension configures Claude Code's supported process-wrapper setting. Its bundled native
-helper reads the selected credential from Windows Credential Manager or Linux Secret Service only when launching Claude
-Code, then injects it into that child process. CC Router does not run an HTTP proxy and does not
-inspect model traffic. The VSIX also bundles the matching desktop installer; installation is
-confirmation-gated and scoped to the current OS user.
+helper reads the selected credential from Windows Credential Manager or Linux Secret Service
+only when launching Claude Code, then injects it into that child process. Keys are never
+written to VS Code settings, workspace files, logs, or extension state, and the management
+webview can only see whether a key exists. CC Router does not run an HTTP proxy and does not
+inspect model traffic.
 
 Remote workspaces including WSL, SSH and Dev Containers are not supported.
 

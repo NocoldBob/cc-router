@@ -13,7 +13,6 @@
   "command.restoreWrapper": "CC Router: Restore Previous Claude Wrapper",
   "command.refresh": "CC Router: Refresh Provider Status",
   "command.openDesktop": "CC Router: Open Desktop App",
-  "command.repairDesktop": "CC Router: Repair or Update Desktop App",
   "command.storeCredential": "CC Router: Save API Key to Credential Store",
   "command.manageProviders": "CC Router: Manage Providers",
   "configuration.helperPath": "Optional path to the CC Router helper executable. Leave empty to use the platform helper bundled with the extension.",

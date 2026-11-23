@@ -52,7 +52,9 @@ jobs:
           cargo test --locked
           cargo check --locked
       - name: Build Windows installer and VSIX
-        run: pnpm vscode:package
+        # The desktop installer is an independent release asset; the VSIX no
+        # longer embeds it, so both are built explicitly.
+        run: pnpm desktop:build && pnpm vscode:package
       - name: Smoke-test installer, app launch, and uninstall
         shell: pwsh
         run: |
@@ -154,7 +156,9 @@ jobs:
           cargo test --locked
           cargo check --locked
       - name: Build Ubuntu packages and VSIX
-        run: pnpm vscode:package
+        # The desktop bundles are independent release assets; the VSIX no
+        # longer embeds them, so both are built explicitly.
+        run: pnpm desktop:build && pnpm vscode:package
       - name: Validate Ubuntu packages
         run: |
           version="${GITHUB_REF_NAME#v}"
