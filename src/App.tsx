@@ -32,13 +32,12 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import {
-  applyKimiCodePreset,
+  applyProviderPreset,
   defaultProviders,
-  findKimiCodePreset,
-  kimiCodePresets,
+  findProviderPreset,
   providerMatchesDefaultTemplate,
+  providerPresets,
   providerTemplateMetadata,
-  type KimiCodePresetId,
 } from './defaultProviders'
 import {
   applyUserRoute,
@@ -97,6 +96,9 @@ function normalizeProvider(provider: StoredProvider, index: number): Provider {
     effortLevel: String(provider.effortLevel || ''),
     autoCompactWindow: String(provider.autoCompactWindow || ''),
     maxContextTokens: String(provider.maxContextTokens || ''),
+    apiTimeoutMs: String(provider.apiTimeoutMs || ''),
+    disableNonessentialTraffic: String(provider.disableNonessentialTraffic || ''),
+    maxOutputTokens: String(provider.maxOutputTokens || ''),
     notes: String(provider.notes || ''),
     enabled: provider.enabled !== false,
     accent,
@@ -181,9 +183,8 @@ function App() {
   const isDirty = JSON.stringify(providers) !== savedSnapshot
   const isValid = selected ? providerIsValid(selected, providers) : false
   const templateMetadata = selected ? providerTemplateMetadata[selected.id] : undefined
-  const kimiCodePreset = selected?.id === 'kimi-code'
-    ? findKimiCodePreset(selected)
-    : undefined
+  const availablePresets = selected ? providerPresets[selected.id] : undefined
+  const activePreset = selected ? findProviderPreset(selected) : undefined
   const matchesVerifiedTemplate = selected
     ? providerMatchesDefaultTemplate(selected)
     : false
@@ -280,11 +281,11 @@ function App() {
     )
   }
 
-  const selectKimiCodePreset = (presetId: KimiCodePresetId) => {
-    if (!selected || selected.id !== 'kimi-code') return
+  const selectPreset = (presetId: string) => {
+    if (!selected) return
     setProviders((current) =>
       current.map((provider) =>
-        provider.id === selected.id ? applyKimiCodePreset(provider, presetId) : provider,
+        provider.id === selected.id ? applyProviderPreset(provider, presetId) : provider,
       ),
     )
   }
@@ -482,12 +483,29 @@ function App() {
       effortLevel: '',
       autoCompactWindow: '',
       maxContextTokens: '',
+      apiTimeoutMs: '',
+      disableNonessentialTraffic: '',
+      maxOutputTokens: '',
       notes: '',
       enabled: true,
       accent: 'violet',
     }
     setProviders((current) => [...current, provider])
     setSelectedId(provider.id)
+  }
+
+  const addFromTemplate = (templateId: string) => {
+    const template = defaultProviders.find((candidate) => candidate.id === templateId)
+    if (!template) return
+    const existing = providers.find((provider) => provider.id === template.id)
+    if (existing) {
+      setSelectedId(existing.id)
+      flash('该模板已在列表中，已为你选中')
+      return
+    }
+    setProviders((current) => [...current, { ...template }])
+    setSelectedId(template.id)
+    flash(`已从模板添加 ${template.displayName}，填写 API Key 后保存`)
   }
 
   const duplicateProvider = () => {
@@ -568,7 +586,24 @@ function App() {
 
         <div className="sidebar-heading">
           <span>PROVIDERS</span>
-          <button className="icon-button" title="新建 Provider" onClick={addProvider}><CirclePlus size={17} /></button>
+          <span className="select-wrap plain-select add-provider-select" title="新建空白 Provider，或从官方模板重新添加">
+            <select
+              value=""
+              aria-label="新建 Provider 或从模板添加"
+              onChange={(event) => {
+                const value = event.target.value
+                if (value === 'blank') addProvider()
+                else if (value) addFromTemplate(value)
+              }}
+            >
+              <option value="" disabled>＋ 新建 / 模板</option>
+              <option value="blank">空白自定义</option>
+              {defaultProviders.map((template) => (
+                <option key={template.id} value={template.id}>模板：{template.displayName}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} />
+          </span>
         </div>
 
         <nav className="provider-list" aria-label="Provider 列表">
@@ -687,33 +722,33 @@ function App() {
             <div className="section-rule" />
             <div className="section-heading compact"><div><h2>模型映射</h2><p>缺省角色会回退到主模型或快速模型</p></div></div>
             <div className="form-grid two-column">
-              {selected.id === 'kimi-code' && (
+              {availablePresets?.length ? (
                 <div className="model-preset full">
                   <label className="field">
                     <span>模型方案</span>
                     <span className="select-wrap plain-select">
                       <select
-                        value={kimiCodePreset?.id ?? 'custom'}
+                        value={activePreset?.id ?? 'custom'}
                         onChange={(event) => {
                           if (event.target.value !== 'custom') {
-                            selectKimiCodePreset(event.target.value as KimiCodePresetId)
+                            selectPreset(event.target.value)
                           }
                         }}
                       >
-                        {kimiCodePresets.map((preset) => (
+                        {availablePresets.map((preset) => (
                           <option key={preset.id} value={preset.id}>{preset.label}</option>
                         ))}
-                        {!kimiCodePreset && <option value="custom">自定义映射</option>}
+                        {!activePreset && <option value="custom">自定义映射</option>}
                       </select>
                       <ChevronDown size={15} />
                     </span>
                   </label>
                   <div className="model-preset-copy">
-                    <strong>{kimiCodePreset?.description ?? '当前字段不是内置方案，可继续手动编辑。'}</strong>
+                    <strong>{activePreset?.description ?? '当前字段不是内置方案，可继续手动编辑。'}</strong>
                     <small>保存后仅对新会话生效；切换模型会使上下文缓存失效，建议新建会话。</small>
                   </div>
                 </div>
-              )}
+              ) : null}
               <label className="field"><span>主模型</span><input value={selected.mainModel} onChange={(event) => updateSelected('mainModel', event.target.value)} /></label>
               <label className="field"><span>快速模型</span><input value={selected.fastModel} onChange={(event) => updateSelected('fastModel', event.target.value)} /></label>
               <label className="field"><span>Opus</span><input placeholder="回退到主模型" value={selected.opusModel} onChange={(event) => updateSelected('opusModel', event.target.value)} /></label>
@@ -743,6 +778,19 @@ function App() {
               </label>
               <label className="field"><span>自动压缩窗口</span><input inputMode="numeric" placeholder="例如 262144" value={selected.autoCompactWindow} onChange={(event) => updateSelected('autoCompactWindow', event.target.value)} /></label>
               <label className="field"><span>最大上下文 Token</span><input inputMode="numeric" placeholder="例如 1048576" value={selected.maxContextTokens} onChange={(event) => updateSelected('maxContextTokens', event.target.value)} /></label>
+              <label className="field"><span>API 超时（毫秒）</span><input inputMode="numeric" placeholder="例如 3000000，部分 Provider 官方建议" value={selected.apiTimeoutMs} onChange={(event) => updateSelected('apiTimeoutMs', event.target.value)} /></label>
+              <label className="field"><span>最大输出 Token</span><input inputMode="numeric" placeholder="例如 64000，长输出截断时设置" value={selected.maxOutputTokens} onChange={(event) => updateSelected('maxOutputTokens', event.target.value)} /></label>
+              <label className="field">
+                <span>禁用非必要流量</span>
+                <span className="select-wrap plain-select">
+                  <select value={selected.disableNonessentialTraffic} onChange={(event) => updateSelected('disableNonessentialTraffic', event.target.value)}>
+                    <option value="">不设置</option>
+                    <option value="1">1 · 禁用（部分 Provider 官方建议）</option>
+                    <option value="0">0 · 保持默认</option>
+                  </select>
+                  <ChevronDown size={15} />
+                </span>
+              </label>
             </div>
 
             <div className="section-rule" />
@@ -971,7 +1019,7 @@ function App() {
             <div className="dialog-icon"><AlertTriangle size={20} /></div>
             <div className="dialog-copy">
               <h2 id="confirm-title">{confirmAction === 'apply' ? `设为 Windows 默认：${selected.displayName}` : '清除 Windows 默认路由'}</h2>
-              <p>{confirmAction === 'apply' ? '将同步 11 个 Windows 用户环境变量，并把 API Key 写入 ANTHROPIC_AUTH_TOKEN。' : '将清除 11 个 Claude Code 路由环境变量。'}</p>
+              <p>{confirmAction === 'apply' ? '将同步 14 个 Windows 用户环境变量，并把 API Key 写入 ANTHROPIC_AUTH_TOKEN。' : '将清除 14 个 Claude Code 路由环境变量。'}</p>
               <div className="change-list">
                 <span>当前</span><code>{routeStatus?.baseUrl || '未设置'}</code>
                 <span>目标</span><code>{confirmAction === 'apply' ? selected.baseUrl : '清除全部路由变量'}</code>

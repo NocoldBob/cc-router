@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyKimiCodePreset, defaultProviders } from './defaultProviders'
+import { applyProviderPreset, defaultProviders } from './defaultProviders'
 import {
   generateClearCommands,
   generatePersistentCommands,
@@ -16,7 +16,9 @@ describe('route command generation', () => {
       "$env:ANTHROPIC_BASE_URL='https://api.deepseek.com/anthropic'",
     )
     expect(output).toContain('$env:ANTHROPIC_AUTH_TOKEN=$env:DEEPSEEK_API_KEY')
-    expect(output).toContain("$env:ANTHROPIC_MODEL='deepseek-v4-pro[1m]'")
+    expect(output).toContain("$env:ANTHROPIC_MODEL='deepseek-flash[1m]'")
+    expect(output).toContain("$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='786432'")
+    expect(output).toContain('Remove-Item Env:API_TIMEOUT_MS -ErrorAction SilentlyContinue')
     expect(output.endsWith('claude')).toBe(true)
   })
 
@@ -33,14 +35,24 @@ describe('route command generation', () => {
 
     expect(parsed.env.ANTHROPIC_BASE_URL).toBe('https://api.kimi.com/coding/')
     expect(parsed.env.ANTHROPIC_AUTH_TOKEN).toBeUndefined()
-    expect(parsed.env.ANTHROPIC_DEFAULT_HAIKU_MODEL).toBe('k3-256k')
-    expect(parsed.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW).toBe('1048576')
-    expect(parsed.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS).toBe('1048576')
-    expect(parsed.env.ANTHROPIC_DEFAULT_FABLE_MODEL).toBe('k3[1m]')
+    expect(parsed.env.ANTHROPIC_DEFAULT_HAIKU_MODEL).toBe('k3.1-pro')
+    expect(parsed.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW).toBe('262144')
+    expect(parsed.env.CLAUDE_CODE_MAX_CONTEXT_TOKENS).toBe('262144')
+    expect(parsed.env.ANTHROPIC_DEFAULT_FABLE_MODEL).toBe('k3.1-pro')
+  })
+
+  it('emits the GLM extra route variables and omits empty ones', () => {
+    const glm = defaultProviders.find((provider) => provider.id === 'glm')!
+    const parsed = JSON.parse(generateSettingsSnippet(glm))
+
+    expect(parsed.env.API_TIMEOUT_MS).toBe('3000000')
+    expect(parsed.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC).toBe('1')
+    expect(parsed.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS).toBeUndefined()
+    expect(parsed.env.ANTHROPIC_MODEL).toBe('glm-5.2[1m]')
   })
 
   it('routes every Claude model role through the K2.7 Code economy profile', () => {
-    const provider = applyKimiCodePreset(defaultProviders[2], 'k2.7-code')
+    const provider = applyProviderPreset(defaultProviders[2], 'k2.7-code')
     const parsed = JSON.parse(generateSettingsSnippet(provider))
     const modelVariables = [
       'ANTHROPIC_MODEL',

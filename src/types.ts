@@ -15,6 +15,9 @@ export interface Provider {
   effortLevel: string
   autoCompactWindow: string
   maxContextTokens: string
+  apiTimeoutMs: string
+  disableNonessentialTraffic: string
+  maxOutputTokens: string
   notes: string
   enabled: boolean
   accent: ProviderAccent

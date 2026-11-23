@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const ROUTE_VARIABLES: [&str; 11] = [
+pub const ROUTE_VARIABLES: [&str; 14] = [
     "ANTHROPIC_BASE_URL",
     "ANTHROPIC_AUTH_TOKEN",
     "ANTHROPIC_MODEL",
@@ -12,6 +12,9 @@ pub const ROUTE_VARIABLES: [&str; 11] = [
     "CLAUDE_CODE_EFFORT_LEVEL",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
     "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
+    "API_TIMEOUT_MS",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS",
 ];
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,6 +34,12 @@ pub struct ProviderRoute {
     pub effort_level: String,
     pub auto_compact_window: String,
     pub max_context_tokens: String,
+    #[serde(default)]
+    pub api_timeout_ms: String,
+    #[serde(default)]
+    pub disable_nonessential_traffic: String,
+    #[serde(default)]
+    pub max_output_tokens: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -88,6 +97,9 @@ impl ProviderRoute {
             &self.effort_level,
             &self.auto_compact_window,
             &self.max_context_tokens,
+            &self.api_timeout_ms,
+            &self.disable_nonessential_traffic,
+            &self.max_output_tokens,
         ] {
             if value
                 .chars()
@@ -106,13 +118,22 @@ impl ProviderRoute {
             return Err("Claude Code effort level is invalid.".into());
         }
 
-        for value in [&self.auto_compact_window, &self.max_context_tokens] {
+        for value in [
+            &self.auto_compact_window,
+            &self.max_context_tokens,
+            &self.api_timeout_ms,
+            &self.max_output_tokens,
+        ] {
             if !value.trim().is_empty()
                 && (!value.chars().all(|character| character.is_ascii_digit())
                     || value.trim() == "0")
             {
-                return Err("Context window values must be positive integers.".into());
+                return Err("Numeric route values must be positive integers.".into());
             }
+        }
+
+        if !matches!(self.disable_nonessential_traffic.trim(), "" | "0" | "1") {
+            return Err("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC must be empty, 0 or 1.".into());
         }
 
         Ok(())
@@ -147,6 +168,9 @@ impl ProviderRoute {
             (ROUTE_VARIABLES[8], &self.effort_level),
             (ROUTE_VARIABLES[9], &self.auto_compact_window),
             (ROUTE_VARIABLES[10], &self.max_context_tokens),
+            (ROUTE_VARIABLES[11], &self.api_timeout_ms),
+            (ROUTE_VARIABLES[12], &self.disable_nonessential_traffic),
+            (ROUTE_VARIABLES[13], &self.max_output_tokens),
         ] {
             if !value.trim().is_empty() {
                 environment.push((name.into(), value.trim().into()));
@@ -200,6 +224,9 @@ pub struct RouteSnapshot {
     pub effort_level: Option<String>,
     pub auto_compact_window: Option<String>,
     pub max_context_tokens: Option<String>,
+    pub api_timeout_ms: Option<String>,
+    pub disable_nonessential_traffic: Option<String>,
+    pub max_output_tokens: Option<String>,
     pub auth_token_set: bool,
 }
 
@@ -267,16 +294,19 @@ mod tests {
             display_name: "DeepSeek".into(),
             base_url: "https://api.deepseek.com/anthropic".into(),
             auth_env_name: "DEEPSEEK_API_KEY".into(),
-            main_model: "deepseek-v4-pro[1m]".into(),
-            fast_model: "deepseek-v4-flash".into(),
+            main_model: "deepseek-flash[1m]".into(),
+            fast_model: "deepseek-flash".into(),
             opus_model: String::new(),
             sonnet_model: String::new(),
             haiku_model: String::new(),
             fable_model: String::new(),
             subagent_model: String::new(),
             effort_level: "max".into(),
-            auto_compact_window: String::new(),
+            auto_compact_window: "786432".into(),
             max_context_tokens: String::new(),
+            api_timeout_ms: String::new(),
+            disable_nonessential_traffic: String::new(),
+            max_output_tokens: String::new(),
         }
     }
 
@@ -286,11 +316,37 @@ mod tests {
         route.validate().unwrap();
         let environment = route.environment("secret".into());
 
-        assert_eq!(environment[3].1, "deepseek-v4-pro[1m]");
-        assert_eq!(environment[5].1, "deepseek-v4-flash");
-        assert_eq!(environment[6].1, "deepseek-v4-pro[1m]");
-        assert_eq!(environment[7].1, "deepseek-v4-flash");
+        assert_eq!(environment[3].1, "deepseek-flash[1m]");
+        assert_eq!(environment[5].1, "deepseek-flash");
+        assert_eq!(environment[6].1, "deepseek-flash[1m]");
+        assert_eq!(environment[7].1, "deepseek-flash");
         assert_eq!(environment[8].1, "max");
+        assert_eq!(environment[9].1, "786432");
+        assert_eq!(environment.len(), 10);
+    }
+
+    #[test]
+    fn optional_extra_variables_are_emitted_only_when_set() {
+        let mut route = route();
+        route.api_timeout_ms = "3000000".into();
+        route.disable_nonessential_traffic = "1".into();
+        route.max_output_tokens = "64000".into();
+        route.validate().unwrap();
+        let environment = route.environment("secret".into());
+
+        assert_eq!(environment.len(), 13);
+        assert!(environment.contains(&("API_TIMEOUT_MS".into(), "3000000".into())));
+        assert!(environment.contains(&(
+            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC".into(),
+            "1".into()
+        )));
+        assert!(environment.contains(&("CLAUDE_CODE_MAX_OUTPUT_TOKENS".into(), "64000".into())));
+
+        route.api_timeout_ms = "0".into();
+        assert!(route.validate().is_err());
+        route.api_timeout_ms = "3000000".into();
+        route.disable_nonessential_traffic = "yes".into();
+        assert!(route.validate().is_err());
     }
 
     #[test]

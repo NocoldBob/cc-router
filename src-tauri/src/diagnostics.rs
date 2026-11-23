@@ -124,6 +124,12 @@ fn route_snapshot_names(snapshot: &RouteSnapshot) -> Vec<String> {
             "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
             &snapshot.max_context_tokens,
         ),
+        ("API_TIMEOUT_MS", &snapshot.api_timeout_ms),
+        (
+            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+            &snapshot.disable_nonessential_traffic,
+        ),
+        ("CLAUDE_CODE_MAX_OUTPUT_TOKENS", &snapshot.max_output_tokens),
     ]
     .into_iter()
     .filter(|(_, value)| value.is_some())

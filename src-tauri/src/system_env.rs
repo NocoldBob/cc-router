@@ -64,6 +64,9 @@ struct RawRouteState {
     effort_level: Option<String>,
     auto_compact_window: Option<String>,
     max_context_tokens: Option<String>,
+    api_timeout_ms: Option<String>,
+    disable_nonessential_traffic: Option<String>,
+    max_output_tokens: Option<String>,
 }
 
 #[cfg(windows)]
@@ -82,6 +85,9 @@ pub fn read_user_route() -> Result<FullRouteState, String> {
   effortLevel = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_EFFORT_LEVEL', 'User')
   autoCompactWindow = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_AUTO_COMPACT_WINDOW', 'User')
   maxContextTokens = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_MAX_CONTEXT_TOKENS', 'User')
+  apiTimeoutMs = [Environment]::GetEnvironmentVariable('API_TIMEOUT_MS', 'User')
+  disableNonessentialTraffic = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', 'User')
+  maxOutputTokens = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_MAX_OUTPUT_TOKENS', 'User')
 } | ConvertTo-Json -Compress
 "#;
     let output = powershell()
@@ -115,6 +121,9 @@ pub fn read_user_route() -> Result<FullRouteState, String> {
             effort_level: normalize(raw.effort_level),
             auto_compact_window: normalize(raw.auto_compact_window),
             max_context_tokens: normalize(raw.max_context_tokens),
+            api_timeout_ms: normalize(raw.api_timeout_ms),
+            disable_nonessential_traffic: normalize(raw.disable_nonessential_traffic),
+            max_output_tokens: normalize(raw.max_output_tokens),
             auth_token_set,
         },
         auth_token: normalize(raw.auth_token),
@@ -162,6 +171,15 @@ pub fn restore_user_route(snapshot: &RouteSnapshot, token: Option<String>) -> Re
         (
             ROUTE_VARIABLES[10].into(),
             snapshot.max_context_tokens.clone(),
+        ),
+        (ROUTE_VARIABLES[11].into(), snapshot.api_timeout_ms.clone()),
+        (
+            ROUTE_VARIABLES[12].into(),
+            snapshot.disable_nonessential_traffic.clone(),
+        ),
+        (
+            ROUTE_VARIABLES[13].into(),
+            snapshot.max_output_tokens.clone(),
         ),
     ]);
     write_values(values)
@@ -238,6 +256,8 @@ mod tests {
     fn generated_script_never_contains_route_secrets() {
         let script = write_script();
         assert!(script.contains("CC_ROUTER_VALUE_1"));
+        assert!(script.contains("CC_ROUTER_VALUE_13"));
+        assert!(script.contains("API_TIMEOUT_MS"));
         assert!(!script.contains("ANTHROPIC_AUTH_TOKEN="));
     }
 }

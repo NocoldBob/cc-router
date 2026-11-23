@@ -33,8 +33,9 @@ CC Router 从系统凭据存储读取所选 API Key，把 Provider、模型和
   已配置，不会读取或显示真实 Key。
 - **修改范围透明**：推荐模式不修改 Windows 用户环境变量和 Claude 配置文件；
   可选持久模式必须确认、写入前备份，并支持回滚。
-- **Provider 可编辑**：内置 DeepSeek、Kimi Global 和 Kimi Code 模板，也可以添加
-  自定义 Anthropic 兼容 HTTPS 或可信内网 HTTP Provider。
+- **Provider 可编辑**：内置 DeepSeek、Kimi Global、Kimi Code、GLM 智谱、Qwen
+  （阿里云百炼）、MiniMax 和本地/局域网部署模板，每个模板附带可原子切换的
+  官方推荐预设，也可以添加自定义 Anthropic 兼容 HTTPS 或可信内网 HTTP Provider。
 - **安全导入导出**：Provider JSON、路由状态和备用配置不包含 API Key。
 - **VS Code Companion**：可为每个本地 Windows 或 Ubuntu 工作区选择独立 Provider，并通过
   官方 Claude Code 扩展支持的进程 wrapper 启动新会话。侧边栏还可以手动探测当前
@@ -150,36 +151,54 @@ CLAUDE_CODE_SUBAGENT_MODEL
 CLAUDE_CODE_EFFORT_LEVEL
 CLAUDE_CODE_AUTO_COMPACT_WINDOW
 CLAUDE_CODE_MAX_CONTEXT_TOKENS
+API_TIMEOUT_MS
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+CLAUDE_CODE_MAX_OUTPUT_TOKENS
 ```
 
 ## 内置 Provider
 
 | Provider | Anthropic Base URL | 主模型 | 快速模型 | 最后验证 | 官方资料 |
 | --- | --- | --- | --- | --- | --- |
-| DeepSeek | `https://api.deepseek.com/anthropic` | `deepseek-v4-pro[1m]` | `deepseek-v4-flash` | 2026-08-19 | [Claude Code 接入](https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code) |
-| Kimi Global | `https://api.moonshot.ai/anthropic` | `kimi-k3` | `kimi-k2.6` | 2026-08-19 | [模型文档](https://platform.kimi.ai/docs/models) |
-| Kimi Code | `https://api.kimi.com/coding/` | `k3[1m]` | `k3-256k` | 2026-09-07 | [Claude Code 接入](https://www.kimi.com/code/docs/third-party-tools/claude-code.html) |
+| DeepSeek | `https://api.deepseek.com/anthropic` | `deepseek-flash[1m]` | `deepseek-flash` | 2026-11-23 | [Claude Code 接入](https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code) |
+| Kimi Global | `https://api.moonshot.ai/anthropic` | `kimi-k3[1m]` | `kimi-k3[1m]` | 2026-11-23 | [Claude Code 接入](https://platform.kimi.com/docs/guide/claude-code-kimi) |
+| Kimi Code | `https://api.kimi.com/coding/` | `k3.1-pro` | `k3.1-pro` | 2026-11-23 | [Claude Code 接入](https://www.kimi.com/code/docs/third-party-tools/claude-code.html) |
+| GLM 智谱 | `https://open.bigmodel.cn/api/anthropic` | `glm-5.2[1m]` | `glm-4.7` | 2026-11-23 | [Claude Code 接入](https://docs.bigmodel.cn/cn/guide/develop/claude) |
+| Qwen Token Plan | `https://token-plan.ap-southeast-1.maas.aliyuncs.com/apps/anthropic` | `auto` | `qwen3.6-flash` | 2026-11-23 | [Claude Code 接入](https://www.alibabacloud.com/help/en/model-studio/claude-code) |
+| Qwen Coding Plan | `https://coding-intl.dashscope.aliyuncs.com/apps/anthropic` | `qwen3.7-plus` | `qwen3.7-plus` | 2026-11-23 | [Claude Code 接入](https://www.alibabacloud.com/help/en/model-studio/claude-code) |
+| MiniMax | `https://api.minimax.cn/anthropic` | `MiniMax-M3.1-Flash[1m]` | `MiniMax-M3.1-Flash[1m]` | 2026-11-23 | [Claude Code 接入](https://platform.minimaxi.com/docs/m-plan/claude-code) |
+| 本地 / 局域网部署 | `http://192.168.10.24:8000/anthropic`（占位） | `deepseek-v4-pro`（占位） | `deepseek-flash`（占位） | — | 需自备 Anthropic 兼容服务 |
 
-内置值是可编辑模板，不是对第三方服务长期可用性的承诺。Kimi Code 的
-`k3[1m]` 写法仅用于 Claude Code 环境变量场景；实际可用模型和上下文取决于
-会员档位。模板依据：
+内置值是可编辑模板，不是对第三方服务长期可用性的承诺。`k3.1-pro[1m]`、
+`deepseek-flash[1m]`、`glm-5.2[1m]` 等 `[1m]` 写法用于开启各家提供的 1M
+上下文档位；实际可用模型和上下文取决于套餐或会员档位。模板依据：
 
 - [DeepSeek 接入 Claude Code](https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code)
+- [Kimi 开放平台接入 Claude Code](https://platform.kimi.com/docs/guide/claude-code-kimi)
 - [Kimi Code 接入 Claude Code](https://www.kimi.com/code/docs/third-party-tools/claude-code.html)
+- [GLM Coding Plan 接入 Claude Code](https://docs.bigmodel.cn/cn/guide/develop/claude)
+- [阿里云百炼接入 Claude Code](https://www.alibabacloud.com/help/en/model-studio/claude-code)
+- [MiniMax 接入 Claude Code](https://platform.minimaxi.com/docs/m-plan/claude-code)
 
-Provider 更新模型或参数后，可以直接在 UI 中修改并保存模板。
+Provider 更新模型或参数后，可以直接在 UI 中修改并保存模板；误删内置模板时可通过
+侧栏“＋ 新建 / 模板”菜单重新添加。
 
-Kimi Code 配置页提供三种可一次切换全部模型映射的方案：
+Kimi Code 配置页提供多种可一次切换全部模型映射的方案（K3.1 Pro 256K/1M/Highspeed、
+K3 1M、K3 256K、K2.7 Code），DeepSeek、GLM、Qwen 等模板同样提供质量优先与
+省额度预设：
 
 | 方案 | Claude Code 模型值 | 上下文 | 适用场景 |
 | --- | --- | --- | --- |
+| K3.1 Pro 256K · 新旗舰 | 全部 `k3.1-pro` | 256K | Plus 及以上会员的日常开发 |
+| K3.1 Pro 1M · 长上下文 | 全部 `k3.1-pro[1m]` | 1M | Pro 及以上会员的大型代码库 |
 | K3 1M · 复杂任务 | 主路由 `k3[1m]`，快速/Haiku `k3-256k` | 1M | 大型代码库、复杂重构和长上下文 |
 | K3 256K · 日常推荐 | 全部 `k3-256k` | 256K | 日常问答、补全和少量文件修改 |
 | K2.7 Code · 省额度 | 全部 `kimi-for-coding` | 256K | 常规开发或 K3 额度不足时继续工作 |
 
 切换后点击“保存配置”，并启动一个新的 Claude Code 会话。不同模型之间不共享上下文缓存；
-为避免重新预填充旧历史造成额外消耗，建议不要在长会话中途切换。K3 与 K2.7 Code 都应保持
-Thinking 开启，内置方案会将思考档位设为 `high`。
+为避免重新预填充旧历史造成额外消耗，建议不要在长会话中途切换。K3.1 Pro 仅支持
+Thinking 开启；K3 与 K2.7 Code 都应保持 Thinking 开启，内置方案会将思考档位设为
+`high`。
 
 应用会显示内置模板的最后验证日期和官方文档入口。编辑过任一技术参数后，界面会
 明确说明该验证日期只适用于默认值，不会把本地自定义值标记为官方已验证。

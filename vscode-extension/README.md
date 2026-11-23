@@ -4,7 +4,8 @@
 [![Marketplace installs](https://img.shields.io/visual-studio-marketplace/i/NocoldBob.cc-router-companion?label=installs&color=2f6f50)](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion)
 
 为每个本地 Windows 或 Ubuntu VS Code 工作区选择独立的 Claude Code Provider。支持 CC Router
-桌面端中配置的 DeepSeek、Kimi 和自定义 Anthropic 兼容接口。
+桌面端中配置的 DeepSeek、Kimi、GLM 智谱、Qwen、MiniMax、本地/局域网部署和自定义
+Anthropic 兼容接口。
 
 > 无代理，不改 Claude 配置。API Key 保留在系统凭据存储中，仅在
 > 启动新的 Claude Code 子进程时注入。

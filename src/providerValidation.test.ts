@@ -24,4 +24,19 @@ describe('Provider validation', () => {
 
     expect(providerIsValid(invalidProvider, [invalidProvider])).toBe(false)
   })
+
+  it('validates the optional extra route variables', () => {
+    const glm = defaultProviders.find((provider) => provider.id === 'glm')!
+    expect(providerIsValid(glm, [glm])).toBe(true)
+
+    expect(
+      providerIsValid({ ...glm, apiTimeoutMs: '0' }, [{ ...glm, apiTimeoutMs: '0' }]),
+    ).toBe(false)
+    expect(
+      providerIsValid({ ...glm, disableNonessentialTraffic: 'yes' }, [glm]),
+    ).toBe(false)
+    expect(
+      providerIsValid({ ...glm, maxOutputTokens: 'abc' }, [glm]),
+    ).toBe(false)
+  })
 })

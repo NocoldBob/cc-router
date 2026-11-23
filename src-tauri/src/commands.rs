@@ -645,6 +645,11 @@ fn snapshot_value<'a>(snapshot: &'a crate::models::RouteSnapshot, name: &str) ->
         "CLAUDE_CODE_EFFORT_LEVEL" => snapshot.effort_level.as_deref(),
         "CLAUDE_CODE_AUTO_COMPACT_WINDOW" => snapshot.auto_compact_window.as_deref(),
         "CLAUDE_CODE_MAX_CONTEXT_TOKENS" => snapshot.max_context_tokens.as_deref(),
+        "API_TIMEOUT_MS" => snapshot.api_timeout_ms.as_deref(),
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC" => {
+            snapshot.disable_nonessential_traffic.as_deref()
+        }
+        "CLAUDE_CODE_MAX_OUTPUT_TOKENS" => snapshot.max_output_tokens.as_deref(),
         _ => None,
     }
 }

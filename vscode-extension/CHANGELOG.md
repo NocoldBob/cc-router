@@ -1,5 +1,16 @@
 # Change Log
 
+## 1.2.0
+
+- Bundled CC Router desktop `0.5.0` with refreshed official templates (DeepSeek
+  `deepseek-flash` naming, Kimi K3.1 Pro presets) and new GLM, Qwen (Model Studio Token Plan
+  and Coding Plan), MiniMax, and local/LAN Provider templates.
+- The bundled helper now manages three additional route variables (`API_TIMEOUT_MS`,
+  `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, `CLAUDE_CODE_MAX_OUTPUT_TOKENS`) when launching
+  Claude Code sessions.
+- Extension code is unchanged from `1.1.0`; the version bump keeps the bundled desktop
+  payload traceable.
+
 ## 1.1.0
 
 - Bundled CC Router desktop `0.4.0` with Provider-isolated terminal launch, "open this

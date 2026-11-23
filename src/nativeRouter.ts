@@ -16,6 +16,9 @@ export interface NativeProviderRoute {
   effortLevel: string
   autoCompactWindow: string
   maxContextTokens: string
+  apiTimeoutMs: string
+  disableNonessentialTraffic: string
+  maxOutputTokens: string
 }
 
 export interface RuntimeInfo {
@@ -53,6 +56,9 @@ export interface UserRouteStatus {
   effortLevel?: string
   autoCompactWindow?: string
   maxContextTokens?: string
+  apiTimeoutMs?: string
+  disableNonessentialTraffic?: string
+  maxOutputTokens?: string
   authTokenSet: boolean
   matchesSelected: boolean
   backupAvailable: boolean
@@ -120,6 +126,9 @@ export function toNativeRoute(provider: Provider): NativeProviderRoute {
     effortLevel: provider.effortLevel,
     autoCompactWindow: provider.autoCompactWindow,
     maxContextTokens: provider.maxContextTokens,
+    apiTimeoutMs: provider.apiTimeoutMs,
+    disableNonessentialTraffic: provider.disableNonessentialTraffic,
+    maxOutputTokens: provider.maxOutputTokens,
   }
 }
 

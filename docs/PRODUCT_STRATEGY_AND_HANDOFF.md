@@ -21,7 +21,8 @@ CC Router 是一个面向 Windows 与 Ubuntu 的 Claude Code 路由启动器：�
 ### 已实现
 
 - Windows 与 Ubuntu Tauri 2 桌面应用。
-- 管理 DeepSeek、Kimi Global、Kimi Code K3/K2.7 Code 和自定义 Anthropic 兼容 Provider。
+- 管理 DeepSeek、Kimi Global、Kimi Code K3.1 Pro/K3/K2.7 Code、GLM 智谱、Qwen（阿里云百炼
+  Token Plan 与 Coding Plan）、MiniMax 和自定义 Anthropic 兼容 Provider。
 - API Key 保存到 Windows Credential Manager 或 Linux Secret Service，前端只获取“是否已配置”。
 - 向新启动的 Claude Code 子进程注入路由，不修改全局环境。
 - 从桌面端直接打开注入所选路由的隔离终端窗口，或在 VS Code 中打开工作目录：
@@ -37,13 +38,14 @@ CC Router 是一个面向 Windows 与 Ubuntu 的 Claude Code 路由启动器：�
 - VS Code Companion 的 VSIX 内置同版本桌面安装器，首次启用时经用户确认后为当前
   当前系统用户安装；不要求用户预先单独下载桌面端。
 - 系统写入前备份旧路由，支持一次回滚。
-- 同步管理 11 个 Claude Code 路由、模型、子代理、effort 和上下文变量。
+- 同步管理 14 个 Claude Code 路由、模型、子代理、effort、上下文与附加请求变量。
 - 生成脱敏的 PowerShell、Bash 和 `settings.json` 备用配置。
 - Provider 导入导出不包含 API Key。
 - 启动前检查 CLI、凭据、工作目录和路由配置，并仅按名称提示将被隔离的环境变量。
 - 内置 Provider 模板显示最后验证日期和官方文档入口。
-- Kimi Code 提供 K3 1M、K3 256K、K2.7 Code 三种原子切换方案，避免模型角色与上下文窗口
-  只修改一部分；切换仅对新会话生效。
+- 内置模板提供可原子切换的官方推荐预设（如 Kimi Code 的 K3.1 Pro 256K/1M/Highspeed、
+  K3 1M、K3 256K、K2.7 Code，DeepSeek 的 Flash/Pro，GLM 的 5.2 Coding Plan/5.3 等），
+  避免模型角色、上下文窗口与附加变量只修改一部分；切换仅对新会话生效。
 - 不运行代理，不转发、读取或记录 prompt、代码、模型回答和 Token 明细。
 
 ### 当前未实现
@@ -237,7 +239,7 @@ README 第一屏应直接说明：
 - `src-tauri/src/system_env.rs`：用户环境变量读写。
 - `src-tauri/src/commands.rs`：进程启动、系统应用、清除与回滚。
 - `src-tauri/src/backup.rs`：不含明文 Key 的回滚备份。
-- `src-tauri/src/models.rs`：路由校验和 11 个环境变量定义。
+- `src-tauri/src/models.rs`：路由校验和 14 个环境变量定义。
 - `src-tauri/src/provider_store.rs`：桌面端与 VS Code Companion 共享的无密钥配置。
 - `src-tauri/src/sessions.rs`：本应用启动会话的内存注册表（不含环境值和会话内容）。
 - `src-tauri/src/diagnostics.rs`：脱敏诊断报告（仅变量名、布尔凭据标志、隐藏用户目录的路径）。

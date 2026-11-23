@@ -17,6 +17,9 @@ export const routeVariableNames = [
   'CLAUDE_CODE_EFFORT_LEVEL',
   'CLAUDE_CODE_AUTO_COMPACT_WINDOW',
   'CLAUDE_CODE_MAX_CONTEXT_TOKENS',
+  'API_TIMEOUT_MS',
+  'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC',
+  'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
 ] as const
 
 const effectiveModels = (provider: Provider) => ({
@@ -40,6 +43,9 @@ const effectiveEnvironment = (provider: Provider): Record<string, string> => {
     CLAUDE_CODE_EFFORT_LEVEL: provider.effortLevel,
     CLAUDE_CODE_AUTO_COMPACT_WINDOW: provider.autoCompactWindow,
     CLAUDE_CODE_MAX_CONTEXT_TOKENS: provider.maxContextTokens,
+    API_TIMEOUT_MS: provider.apiTimeoutMs,
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: provider.disableNonessentialTraffic,
+    CLAUDE_CODE_MAX_OUTPUT_TOKENS: provider.maxOutputTokens,
   }
 }
 
@@ -151,6 +157,9 @@ export function generateStatusCommands(platform: RouterPlatform = 'windows'): st
       `printf 'Effort=%s\\n' "\${CLAUDE_CODE_EFFORT_LEVEL:-}"`,
       `printf 'AutoCompactWindow=%s\\n' "\${CLAUDE_CODE_AUTO_COMPACT_WINDOW:-}"`,
       `printf 'MaxContextTokens=%s\\n' "\${CLAUDE_CODE_MAX_CONTEXT_TOKENS:-}"`,
+      `printf 'ApiTimeoutMs=%s\\n' "\${API_TIMEOUT_MS:-}"`,
+      `printf 'DisableNonessentialTraffic=%s\\n' "\${CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:-}"`,
+      `printf 'MaxOutputTokens=%s\\n' "\${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-}"`,
       `if [ -n "\${ANTHROPIC_AUTH_TOKEN:-}" ]; then echo 'AuthTokenSet=true'; else echo 'AuthTokenSet=false'; fi`,
     ].join('\n')
   }
@@ -166,6 +175,9 @@ export function generateStatusCommands(platform: RouterPlatform = 'windows'): st
     "  Effort = $env:CLAUDE_CODE_EFFORT_LEVEL",
     "  AutoCompactWindow = $env:CLAUDE_CODE_AUTO_COMPACT_WINDOW",
     "  MaxContextTokens = $env:CLAUDE_CODE_MAX_CONTEXT_TOKENS",
+    "  ApiTimeoutMs = $env:API_TIMEOUT_MS",
+    "  DisableNonessentialTraffic = $env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+    "  MaxOutputTokens = $env:CLAUDE_CODE_MAX_OUTPUT_TOKENS",
     "  AuthTokenSet = -not [string]::IsNullOrWhiteSpace($env:ANTHROPIC_AUTH_TOKEN)",
     '} | Format-List',
   ].join('\n')
