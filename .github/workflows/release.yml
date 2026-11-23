@@ -57,8 +57,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
-          if (-not $installer) { throw "NSIS installer was not produced." }
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" |
+            Where-Object { $_.Name -like "*_${version}_*" })
+          if ($installers.Count -ne 1) { throw "Expected exactly one NSIS installer for version $version." }
+          $installer = $installers[0]
           $installDir = Join-Path $env:RUNNER_TEMP "cc-router-smoke"
           $installedApp = $null
           $uninstaller = $null
@@ -93,9 +96,14 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path release-assets | Out-Null
-          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
-          $vsix = Get-ChildItem "vscode-extension/*-win32-x64-*.vsix" | Select-Object -First 1
-          if (-not $installer -or -not $vsix) { throw "Windows release assets are incomplete." }
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $extensionVersion = (Get-Content vscode-extension/package.json | ConvertFrom-Json).version
+          $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis/*.exe" |
+            Where-Object { $_.Name -like "*_${version}_*" })
+          $vsixes = @(Get-ChildItem "vscode-extension/*-win32-x64-$extensionVersion.vsix")
+          if ($installers.Count -ne 1 -or $vsixes.Count -ne 1) { throw "Windows release assets are incomplete." }
+          $installer = $installers[0]
+          $vsix = $vsixes[0]
           Copy-Item $installer.FullName "release-assets/$($installer.Name.Replace(' ', '.'))"
           Copy-Item $vsix.FullName "release-assets/$($vsix.Name)"
           Get-ChildItem release-assets -File | ForEach-Object {
@@ -149,8 +157,9 @@ jobs:
         run: pnpm vscode:package
       - name: Validate Ubuntu packages
         run: |
-          test -n "$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' -print -quit)"
-          test -n "$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' -print -quit)"
+          version="${GITHUB_REF_NAME#v}"
+          test -n "$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name "*_${version}_*.deb" -print -quit)"
+          test -n "$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -name "*_${version}_*.AppImage" -print -quit)"
           test -n "$(find vscode-extension -maxdepth 1 -name '*-linux-x64-*.vsix' -print -quit)"
           dpkg-deb --info src-tauri/target/release/bundle/deb/*.deb >/dev/null
       - name: Collect Ubuntu packages and checksums
