@@ -129,6 +129,7 @@ export class ManagePanel {
           cliAvailable: Boolean(vscode.extensions.getExtension(CLAUDE_EXTENSION_ID)),
           credentialStore: credentialStoreLabel(),
           persistentRouteSupported: process.platform === 'win32',
+          host: 'vscode',
         }
       case 'getCredentialStatus':
         return helper.credentialStatus(context, String(params.providerId))

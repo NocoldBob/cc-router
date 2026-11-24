@@ -28,6 +28,8 @@ export interface RuntimeInfo {
   cliPath?: string
   credentialStore: string
   persistentRouteSupported: boolean
+  /** 'vscode' when the UI runs inside the extension webview host. */
+  host?: string
 }
 
 export interface CredentialStatus {

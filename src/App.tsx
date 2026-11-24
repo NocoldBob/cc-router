@@ -191,6 +191,7 @@ function App() {
     : false
   const launchReady = Boolean(launchReadiness?.ready && !isDirty && isValid)
   const isLinux = runtime.platform === 'linux'
+  const isVsCodeHost = runtime.host === 'vscode'
   const availableModes = (Object.keys(modeLabels) as OutputMode[]).filter(
     (item) => item !== 'persistent' || runtime.persistentRouteSupported,
   )
@@ -829,7 +830,7 @@ function App() {
 
           <aside className="output-panel" aria-label="路由控制与命令输出">
             <div className="output-header">
-              <div><span className="eyebrow">ONE-CLICK ROUTING</span><h2>桌面路由控制</h2></div>
+              <div><span className="eyebrow">ONE-CLICK ROUTING</span><h2>{isVsCodeHost ? '路由控制' : '桌面路由控制'}</h2></div>
               <button className="refresh-button" title="刷新本机状态" onClick={refreshNativeState} disabled={!nativeRuntimeAvailable || Boolean(busy)}><RefreshCw size={14} /></button>
             </div>
 
@@ -851,10 +852,12 @@ function App() {
                 <span><FolderOpen size={13} /> 工作目录</span>
                 <input value={workingDirectory} placeholder={isLinux ? '例如 /home/user/projects/my-app' : '例如 D:\\projects\\my-app'} onChange={(event) => setWorkingDirectory(event.target.value)} />
               </label>
-              <label className="dark-field">
-                <span><Terminal size={13} /> Claude CLI 路径</span>
-                <input value={cliPath} placeholder={runtime.cliPath || (isLinux ? '自动检测，或填写 /home/user/.local/bin/claude' : '自动检测，或填写 claude.exe / claude.cmd')} onChange={(event) => setCliPath(event.target.value)} />
-              </label>
+              {!isVsCodeHost && (
+                <label className="dark-field">
+                  <span><Terminal size={13} /> Claude CLI 路径</span>
+                  <input value={cliPath} placeholder={runtime.cliPath || (isLinux ? '自动检测，或填写 /home/user/.local/bin/claude' : '自动检测，或填写 claude.exe / claude.cmd')} onChange={(event) => setCliPath(event.target.value)} />
+                </label>
+              )}
             </div>
 
             {nativeRuntimeAvailable && (
@@ -914,14 +917,14 @@ function App() {
               <button
                 className="button outline"
                 disabled={!canOpenVsCode || Boolean(busy)}
-                title={workingDirectory.trim() ? '在 VS Code 中打开工作目录，并通过 Companion 绑定当前 Provider' : '先填写有效的工作目录'}
+                title={workingDirectory.trim() ? (isVsCodeHost ? '将当前 Provider 绑定到此工作目录对应的工作区' : '在 VS Code 中打开工作目录，并通过 Companion 绑定当前 Provider') : '先填写有效的工作目录'}
                 onClick={() => void openVsCode()}
               >
-                <CodeXml size={15} /> {busy === 'vscode' ? '正在打开…' : '在 VS Code 中打开'}
+                <CodeXml size={15} /> {busy === 'vscode' ? '正在处理…' : isVsCodeHost ? '绑定当前工作区' : '在 VS Code 中打开'}
               </button>
             </div>
 
-            {nativeRuntimeAvailable && (
+            {nativeRuntimeAvailable && !isVsCodeHost && (
               <section className="session-panel" aria-label="隔离会话">
                 <div className="readiness-heading">
                   <span>隔离会话</span>
