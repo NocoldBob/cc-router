@@ -249,6 +249,38 @@ mod tests {
         assert!(!json.contains("API Key"));
     }
 
+    #[test]
+    fn earliest_release_catalog_remains_readable() {
+        let json = r#"{
+            "schemaVersion": 1,
+            "providers": [{
+                "id": "deepseek",
+                "displayName": "DeepSeek",
+                "baseUrl": "https://api.deepseek.com/anthropic",
+                "authEnvName": "DEEPSEEK_API_KEY",
+                "mainModel": "deepseek-v4-pro[1m]",
+                "fastModel": "deepseek-v4-flash",
+                "opusModel": "",
+                "sonnetModel": "",
+                "haikuModel": "",
+                "fableModel": "",
+                "subagentModel": "",
+                "effortLevel": "max",
+                "autoCompactWindow": "",
+                "maxContextTokens": "",
+                "notes": "First-release schema fixture",
+                "enabled": true,
+                "accent": "green"
+            }]
+        }"#;
+
+        let catalog: ProviderCatalog = serde_json::from_str(json).unwrap();
+        validate_catalog(&catalog.providers).unwrap();
+        assert_eq!(catalog.providers[0].route.api_timeout_ms, "");
+        assert_eq!(catalog.providers[0].route.disable_nonessential_traffic, "");
+        assert_eq!(catalog.providers[0].route.max_output_tokens, "");
+    }
+
     #[cfg(windows)]
     #[test]
     fn workspace_match_requires_a_path_boundary() {

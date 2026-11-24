@@ -111,6 +111,7 @@ export interface DiagnosticsReport {
 }
 
 export const nativeRuntimeAvailable = isTauri()
+export const nativeHost: 'desktop' | 'vscode' = 'desktop'
 
 export function toNativeRoute(provider: Provider): NativeProviderRoute {
   return {

@@ -9,3 +9,5 @@ desktop/cc-router-desktop-setup.exe
 *.vsix
 desktop/
 media/*.map
+dist/**/*.test.js
+dist/**/*.test.js.map

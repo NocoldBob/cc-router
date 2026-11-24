@@ -33,6 +33,16 @@ and this project uses semantic versioning.
   platform helper and the management webview) and no longer embeds the desktop
   installer.
 
+### Fixed
+
+- The management webview now bootstraps React in production mode and includes
+  the complete base stylesheet, preventing a blank panel in VS Code.
+- The VS Code management layout is selected at build time and webview resource
+  URLs are cache-busted, so upgrading cannot leave desktop-only controls or the
+  old "桌面路由控制" title in a newly opened panel.
+- The 1.3.0 release notes now explain one-time template loading, persistence,
+  old-panel reload steps, and why existing desktop installations need no action.
+
 ## [0.5.0] - 2026-11-23
 
 ### Added

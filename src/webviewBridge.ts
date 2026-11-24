@@ -80,6 +80,9 @@ if (seed?.providers) {
 }
 
 export const nativeRuntimeAvailable = true
+// This module is selected by the webview build alias, so the host is known
+// before the first render and does not depend on a runtime round-trip.
+export const nativeHost: 'desktop' | 'vscode' = 'vscode'
 
 export function getRuntimeInfo() {
   return call<RuntimeInfo>('getRuntimeInfo')

@@ -53,6 +53,7 @@ import {
   launchTerminal,
   launchVsCode,
   listSessions,
+  nativeHost,
   nativeRuntimeAvailable,
   rollbackUserRoute,
   saveCredential,
@@ -191,7 +192,7 @@ function App() {
     : false
   const launchReady = Boolean(launchReadiness?.ready && !isDirty && isValid)
   const isLinux = runtime.platform === 'linux'
-  const isVsCodeHost = runtime.host === 'vscode'
+  const isVsCodeHost = nativeHost === 'vscode' || runtime.host === 'vscode'
   const availableModes = (Object.keys(modeLabels) as OutputMode[]).filter(
     (item) => item !== 'persistent' || runtime.persistentRouteSupported,
   )

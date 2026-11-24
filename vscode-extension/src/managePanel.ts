@@ -68,12 +68,12 @@ export class ManagePanel {
   private async renderHtml(): Promise<string> {
     const nonce = String(Date.now()) + String(Math.random()).slice(2)
     const webview = this.panel.webview
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.file(join(this.context.extensionPath, 'media', 'manage.js')),
-    )
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.file(join(this.context.extensionPath, 'media', 'manage.css')),
-    )
+    const scriptUri = webview
+      .asWebviewUri(vscode.Uri.file(join(this.context.extensionPath, 'media', 'manage.js')))
+      .with({ query: nonce })
+    const styleUri = webview
+      .asWebviewUri(vscode.Uri.file(join(this.context.extensionPath, 'media', 'manage.css')))
+      .with({ query: nonce })
     let providersJson = '[]'
     try {
       providersJson = JSON.stringify((await this.store).list())
@@ -224,7 +224,15 @@ export class ManagePanel {
       )
     }
     await helper.selectProvider(this.context, workspace, provider.id)
-    await vscode.commands.executeCommand('ccRouter.configureIntegration')
+    const configured = await vscode.commands.executeCommand<boolean>('ccRouter.configureIntegration')
+    if (!configured) {
+      throw new Error(
+        text(
+          '尚未更新 Claude Code wrapper，已取消启动。请允许 CC Router 配置后重试。',
+          'The Claude Code wrapper was not updated. Allow CC Router to configure it, then retry.',
+        ),
+      )
+    }
     const extension = vscode.extensions.getExtension(CLAUDE_EXTENSION_ID)
     if (!extension) {
       throw new Error(

@@ -27,12 +27,14 @@ Anthropic 兼容接口。**自 1.3.0 起扩展自包含，无需安装桌面端�
 1. 从 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion)
    安装扩展（会自动带上 Anthropic 官方 Claude Code 扩展）。
 2. 执行命令 **CC Router：管理 Provider**，选择内置模板或新建 Provider，填入 API Key
-   后点击“保存配置”。Key 只写入 Windows Credential Manager / Linux Secret Service。
+   后先点击“保存凭据”，再点击“保存配置”。Key 只写入 Windows Credential Manager /
+   Linux Secret Service；Provider 参数由扩展保存。
 3. 在 VS Code 左侧活动栏打开 **CC Router**，点击一个 Provider 绑定当前工作区。
 4. 点击 **启动 Claude Code 新会话**，用 `/status` 确认路由生效。
 
-不需要安装任何其他组件。如果电脑上已安装 CC Router 桌面端，两边的 Provider 配置会
-自动合并导入；桌面端继续作为独立产品维护，但不再是插件运行的前提。
+不需要安装任何其他组件。如果电脑上已安装 CC Router 桌面端，首次激活会导入其已有的
+Provider 目录；桌面端可以继续独立使用，但无需升级或卸载，也不再是插件运行的前提。
+旧版用户加载新模板及处理旧管理面板缓存的步骤见 [1.3.0 升级说明](CHANGELOG.md#130)。
 
 常用命令（`Ctrl+Shift+P`）：
 
@@ -79,8 +81,9 @@ desktop app required.
 1. Install the extension from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=NocoldBob.cc-router-companion).
    The official Anthropic Claude Code extension is installed automatically as a dependency.
 2. Run **CC Router: Manage Providers**, pick a built-in template or create a Provider, paste
-   the API Key and save. Keys are written only to Windows Credential Manager or Linux Secret
-   Service.
+   the API Key, click **Save Credential**, then click **Save Configuration**. Keys are written
+   only to Windows Credential Manager or Linux Secret Service; Provider settings are stored by
+   the extension.
 3. Open **CC Router** from the Activity Bar and click a Provider to bind the workspace.
 4. Click **Start New Claude Code Session** and confirm the route with `/status`.
 
