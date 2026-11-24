@@ -646,11 +646,7 @@ function App() {
               <p>{selected.baseUrl}</p>
               {templateMetadata && (
                 <div className={`template-meta ${matchesVerifiedTemplate ? '' : 'modified'}`}>
-                  <span>
-                    {matchesVerifiedTemplate
-                      ? `内置模板已验证 ${templateMetadata.verifiedAt}`
-                      : `模板已修改，验证日期 ${templateMetadata.verifiedAt} 仅适用于默认值`}
-                  </span>
+                  <span>模型配置更新于 {templateMetadata.verifiedAt}</span>
                   <a href={templateMetadata.documentationUrl} target="_blank" rel="noreferrer">
                     官方文档 <ExternalLink size={11} />
                   </a>
