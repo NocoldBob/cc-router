@@ -17,6 +17,12 @@ await build({
   configFile: false,
   root,
   plugins: [react.default ? react.default() : react()],
+  define: {
+    // The bundle runs in a VS Code webview, not Node; library mode does not
+    // inject these by default and React reads NODE_ENV at module scope.
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env': '{}',
+  },
   resolve: {
     alias: [{ find: /^\.\/nativeRouter$/, replacement: resolve(root, 'src', 'webviewBridge.ts') }],
   },
