@@ -86,7 +86,7 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
         `**${provider.displayName}**\n\n${provider.mainModel}\n\n${provider.baseUrl}\n\n${
           provider.credentialConfigured
             ? text('凭据已配置', 'Credential configured')
-            : text('需要在桌面端配置 API Key', 'API Key required in CC Router desktop')
+            : text('需要在管理面板中配置 API Key', 'API Key required in the Provider Manager')
         }${probe ? `\n\n${text('上次探测', 'Last probe')}: ${probeTooltip(probe.result, probe.at)}` : ''}`,
       )
       item.command = {
@@ -160,7 +160,7 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
         icon: selected.credentialConfigured ? 'lock' : 'warning',
         command: selected.credentialConfigured
           ? undefined
-          : { command: 'ccRouter.openDesktop', title: text('打开桌面端', 'Open Desktop') },
+          : { command: 'ccRouter.manageProviders', title: text('打开管理面板', 'Open Provider Manager') },
       },
     ]
   }
@@ -176,9 +176,9 @@ export class RouterTreeProvider implements vscode.TreeDataProvider<RouterNode> {
       },
       {
         type: 'action',
-        label: text('打开 CC Router 桌面端', 'Open CC Router Desktop'),
+        label: text('管理 Provider', 'Manage Providers'),
         icon: 'settings-gear',
-        command: 'ccRouter.openDesktop',
+        command: 'ccRouter.manageProviders',
       },
     ]
     if (selected) {
